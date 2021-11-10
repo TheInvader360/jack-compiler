@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/TheInvader360/jack-compiler/handler"
-	"github.com/TheInvader360/jack-compiler/parser"
 	"github.com/TheInvader360/jack-compiler/tokenizer"
 
 	"github.com/pkg/errors"
@@ -42,9 +41,12 @@ func main() {
 		if strings.HasSuffix(file, ".jack") {
 			jackData, err := ioutil.ReadFile(file)
 			handler.FatalError(errors.Wrap(err, fmt.Sprintf("Can't read file: %s", file)))
+
 			tokens := tokenizer.Tokenize(jackData)
-			output := parser.CompileClass(tokens)
-			writeFile(output, strings.Replace(file, ".jack", ".xml", 1))
+			writeFile(tokenizer.AsXML(tokens), strings.Replace(file, ".jack", "T.xml", 1))
+
+			//output := engine.CompileClass(tokens)
+			//writeFile(output, strings.Replace(file, ".jack", ".xml", 1))
 		}
 	}
 }

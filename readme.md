@@ -12,7 +12,7 @@ cd jack-compiler
 Then:
 
 ```bash
-go run JackCompiler.go examples/HelloWorld/Main.jack
+go run main.go examples/Square/Main.jack
 ```
 
 The translated program is exported to the source directory with the same base filename but a .vm extension (so the given example would generate examples/HelloWorld/Main.vm)
@@ -20,7 +20,8 @@ The translated program is exported to the source directory with the same base fi
 Or:
 
 ```bash
-go run JackCompiler.go examples/HelloWorld/
+go run main.go examples/Square/
 ```
 
 Translates all .jack files in the specified directory and exports them all to the same directory with the same base filename but a .vm extension
+

@@ -2,6 +2,12 @@ class Main {
     function void main () {
         // Hello World...
         do Output.printString("Hello World");
+
+        /*
+          Hello
+          World
+        */
+        
         return;
     }
 }
