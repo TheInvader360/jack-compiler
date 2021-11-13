@@ -6,21 +6,6 @@ import (
 	"strings"
 )
 
-type TokenType string
-
-const (
-	TokenTypeKeyword         TokenType = "keyword"
-	TokenTypeSymbol          TokenType = "symbol"
-	TokenTypeIntegerConstant TokenType = "integerConstant"
-	TokenTypeStringConstant  TokenType = "stringConstant"
-	TokenTypeIdentifier      TokenType = "identifier"
-)
-
-type Token struct {
-	TypeOf TokenType
-	Value  string
-}
-
 const (
 	comment         = `(?m)(\/\/.*)|(?s)(\/\*.*?\*\/)`
 	keyword         = `(?m)(^class$|^constructor$|^function$|^method$|^field$|^static$|^var$|^int$|^char$|^boolean$|^void$|^true$|^false$|^null$|^this$|^let$|^do$|^if$|^else$|^while$|^return$)`

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/TheInvader360/jack-compiler/engine"
 	"github.com/TheInvader360/jack-compiler/handler"
 	"github.com/TheInvader360/jack-compiler/tokenizer"
 
@@ -45,8 +46,8 @@ func main() {
 			tokens := tokenizer.Tokenize(jackData)
 			writeFile(tokenizer.AsXML(tokens), strings.Replace(file, ".jack", "T.xml", 1))
 
-			//output := engine.CompileClass(tokens)
-			//writeFile(output, strings.Replace(file, ".jack", ".xml", 1))
+			tree := engine.CompileClass(tokens)
+			writeFile(tree, strings.Replace(file, ".jack", ".xml", 1))
 		}
 	}
 }

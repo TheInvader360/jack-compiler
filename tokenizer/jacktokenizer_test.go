@@ -3,8 +3,7 @@ package tokenizer
 import (
 	"testing"
 
-	"github.com/TheInvader360/jack-compiler/fixtures"
-
+	"github.com/TheInvader360/jack-compiler/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,32 +13,14 @@ func TestTokenize(t *testing.T) {
 		expectedTokens []Token
 	}
 	tests := []test{
-		{
-			jackSource: []byte(fixtures.HelloWorld_Main_Jack),
-			expectedTokens: []Token{
-				{TypeOf: TokenTypeKeyword, Value: "class"},
-				{TypeOf: TokenTypeIdentifier, Value: "Main"},
-				{TypeOf: TokenTypeSymbol, Value: "{"},
-				{TypeOf: TokenTypeKeyword, Value: "function"},
-				{TypeOf: TokenTypeKeyword, Value: "void"},
-				{TypeOf: TokenTypeIdentifier, Value: "main"},
-				{TypeOf: TokenTypeSymbol, Value: "("},
-				{TypeOf: TokenTypeSymbol, Value: ")"},
-				{TypeOf: TokenTypeSymbol, Value: "{"},
-				{TypeOf: TokenTypeKeyword, Value: "do"},
-				{TypeOf: TokenTypeIdentifier, Value: "Output"},
-				{TypeOf: TokenTypeSymbol, Value: "."},
-				{TypeOf: TokenTypeIdentifier, Value: "printString"},
-				{TypeOf: TokenTypeSymbol, Value: "("},
-				{TypeOf: TokenTypeStringConstant, Value: "Hello World"},
-				{TypeOf: TokenTypeSymbol, Value: ")"},
-				{TypeOf: TokenTypeSymbol, Value: ";"},
-				{TypeOf: TokenTypeKeyword, Value: "return"},
-				{TypeOf: TokenTypeSymbol, Value: ";"},
-				{TypeOf: TokenTypeSymbol, Value: "}"},
-				{TypeOf: TokenTypeSymbol, Value: "}"},
-			},
-		},
+		{jackSource: []byte(common.Array_Main_Jack), expectedTokens: Array_Main_Tokens(t)},
+		{jackSource: []byte(common.HelloWorld_Main_Jack), expectedTokens: HelloWorld_Main_Tokens(t)},
+		{jackSource: []byte(common.Square_Main_Jack), expectedTokens: Square_Main_Tokens(t)},
+		{jackSource: []byte(common.Square_Square_Jack), expectedTokens: Square_Square_Tokens(t)},
+		{jackSource: []byte(common.Square_SquareGame_Jack), expectedTokens: Square_SquareGame_Tokens(t)},
+		{jackSource: []byte(common.SquareExpressionless_Main_Jack), expectedTokens: SquareExpressionless_Main_Tokens(t)},
+		{jackSource: []byte(common.SquareExpressionless_Square_Jack), expectedTokens: SquareExpressionless_Square_Tokens(t)},
+		{jackSource: []byte(common.SquareExpressionless_SquareGame_Jack), expectedTokens: SquareExpressionless_SquareGame_Tokens(t)},
 	}
 	for _, tc := range tests {
 		tokens := Tokenize(tc.jackSource)
@@ -53,32 +34,14 @@ func TestAsXML(t *testing.T) {
 		expectedXML string
 	}
 	tests := []test{
-		{
-			tokens: []Token{
-				{TypeOf: TokenTypeKeyword, Value: "class"},
-				{TypeOf: TokenTypeIdentifier, Value: "Main"},
-				{TypeOf: TokenTypeSymbol, Value: "{"},
-				{TypeOf: TokenTypeKeyword, Value: "function"},
-				{TypeOf: TokenTypeKeyword, Value: "void"},
-				{TypeOf: TokenTypeIdentifier, Value: "main"},
-				{TypeOf: TokenTypeSymbol, Value: "("},
-				{TypeOf: TokenTypeSymbol, Value: ")"},
-				{TypeOf: TokenTypeSymbol, Value: "{"},
-				{TypeOf: TokenTypeKeyword, Value: "do"},
-				{TypeOf: TokenTypeIdentifier, Value: "Output"},
-				{TypeOf: TokenTypeSymbol, Value: "."},
-				{TypeOf: TokenTypeIdentifier, Value: "printString"},
-				{TypeOf: TokenTypeSymbol, Value: "("},
-				{TypeOf: TokenTypeStringConstant, Value: "Hello World"},
-				{TypeOf: TokenTypeSymbol, Value: ")"},
-				{TypeOf: TokenTypeSymbol, Value: ";"},
-				{TypeOf: TokenTypeKeyword, Value: "return"},
-				{TypeOf: TokenTypeSymbol, Value: ";"},
-				{TypeOf: TokenTypeSymbol, Value: "}"},
-				{TypeOf: TokenTypeSymbol, Value: "}"},
-			},
-			expectedXML: fixtures.HelloWorld_MainT_XML,
-		},
+		{tokens: Array_Main_Tokens(t), expectedXML: common.Array_MainT_XML},
+		{tokens: HelloWorld_Main_Tokens(t), expectedXML: common.HelloWorld_MainT_XML},
+		{tokens: Square_Main_Tokens(t), expectedXML: common.Square_MainT_XML},
+		{tokens: Square_Square_Tokens(t), expectedXML: common.Square_SquareT_XML},
+		{tokens: Square_SquareGame_Tokens(t), expectedXML: common.Square_SquareGameT_XML},
+		{tokens: SquareExpressionless_Main_Tokens(t), expectedXML: common.SquareExpressionless_MainT_XML},
+		{tokens: SquareExpressionless_Square_Tokens(t), expectedXML: common.SquareExpressionless_SquareT_XML},
+		{tokens: SquareExpressionless_SquareGame_Tokens(t), expectedXML: common.SquareExpressionless_SquareGameT_XML},
 	}
 	for _, tc := range tests {
 		xml := AsXML(tc.tokens)
@@ -92,26 +55,14 @@ func TestTokenizeAsXML(t *testing.T) {
 		expectedXML string
 	}
 	tests := []test{
-		{
-			jackSource:  []byte(fixtures.HelloWorld_Main_Jack),
-			expectedXML: fixtures.HelloWorld_MainT_XML,
-		},
-		{
-			jackSource:  []byte(fixtures.Array_Main_Jack),
-			expectedXML: fixtures.Array_MainT_XML,
-		},
-		{
-			jackSource:  []byte(fixtures.Square_Main_Jack),
-			expectedXML: fixtures.Square_MainT_XML,
-		},
-		{
-			jackSource:  []byte(fixtures.Square_Square_Jack),
-			expectedXML: fixtures.Square_SquareT_XML,
-		},
-		{
-			jackSource:  []byte(fixtures.Square_SquareGame_Jack),
-			expectedXML: fixtures.Square_SquareGameT_XML,
-		},
+		{jackSource: []byte(common.Array_Main_Jack), expectedXML: common.Array_MainT_XML},
+		{jackSource: []byte(common.HelloWorld_Main_Jack), expectedXML: common.HelloWorld_MainT_XML},
+		{jackSource: []byte(common.Square_Main_Jack), expectedXML: common.Square_MainT_XML},
+		{jackSource: []byte(common.Square_Square_Jack), expectedXML: common.Square_SquareT_XML},
+		{jackSource: []byte(common.Square_SquareGame_Jack), expectedXML: common.Square_SquareGameT_XML},
+		{jackSource: []byte(common.SquareExpressionless_Main_Jack), expectedXML: common.SquareExpressionless_MainT_XML},
+		{jackSource: []byte(common.SquareExpressionless_Square_Jack), expectedXML: common.SquareExpressionless_SquareT_XML},
+		{jackSource: []byte(common.SquareExpressionless_SquareGame_Jack), expectedXML: common.SquareExpressionless_SquareGameT_XML},
 	}
 	for _, tc := range tests {
 		tokens := Tokenize(tc.jackSource)
