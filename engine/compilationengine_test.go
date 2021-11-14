@@ -9,6 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewCompilationEngine(t *testing.T) {
+	tokens := []tokenizer.Token{}
+	engine := NewCompilationEngine(tokens)
+	assert.Equal(t, tokens, engine.tokens)
+	assert.Equal(t, 0, engine.tokenIndex)
+}
+
 func TestCompileClass(t *testing.T) {
 	type test struct {
 		tokens      []tokenizer.Token
@@ -25,7 +32,75 @@ func TestCompileClass(t *testing.T) {
 		{tokens: tokenizer.SquareExpressionless_SquareGame_Tokens(t), expectedXML: common.SquareExpressionless_SquareGame_XML},
 	}
 	for _, tc := range tests {
-		xml := CompileClass(tc.tokens)
-		assert.Equal(t, tc.expectedXML, xml)
+		engine := NewCompilationEngine(tc.tokens)
+		tree := engine.CompileClass()
+		assert.Equal(t, tc.expectedXML, tree)
+	}
+}
+
+func TestCompileVarDec(t *testing.T) {
+	type test struct {
+		tokens       []tokenizer.Token
+		expectedTree *Node
+	}
+	tests := []test{
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeKeyword, Value: "var"},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "int"},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "a"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: ","},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "b"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: ","},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "c"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: ";"},
+			},
+			expectedTree: &Node{Name: "varDec", Value: "", Children: []Node{
+				{Name: "keyword", Value: "var", Children: []Node{}},
+				{Name: "identifier", Value: "int", Children: []Node{}},
+				{Name: "identifier", Value: "a", Children: []Node{}},
+				{Name: "symbol", Value: ",", Children: []Node{}},
+				{Name: "identifier", Value: "b", Children: []Node{}},
+				{Name: "symbol", Value: ",", Children: []Node{}},
+				{Name: "identifier", Value: "c", Children: []Node{}},
+				{Name: "symbol", Value: ";", Children: []Node{}},
+			}},
+		},
+	}
+	for _, tc := range tests {
+		engine := NewCompilationEngine(tc.tokens)
+		tree := engine.compileVarDec()
+		assert.Equal(t, tc.expectedTree, tree)
+	}
+}
+
+func TestCompileExpression(t *testing.T) {
+	type test struct {
+		tokens       []tokenizer.Token
+		expectedTree *Node
+	}
+	tests := []test{
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "a"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "+"},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "b"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: ";"},
+			},
+			expectedTree: &Node{Name: "expression", Value: "", Children: []Node{
+				{Name: "term", Value: "", Children: []Node{
+					{Name: "identifier", Value: "a", Children: []Node{}},
+				}},
+				{Name: "symbol", Value: "+", Children: []Node{}},
+				{Name: "term", Value: "", Children: []Node{
+					{Name: "identifier", Value: "b", Children: []Node{}},
+				}},
+			}},
+		},
+	}
+	for _, tc := range tests {
+		engine := NewCompilationEngine(tc.tokens)
+		tree := engine.compileExpression()
+		assert.Equal(t, tc.expectedTree, tree)
 	}
 }
