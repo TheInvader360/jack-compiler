@@ -22,11 +22,11 @@ func TestCompileClass(t *testing.T) {
 		expectedXML string
 	}
 	tests := []test{
-		//TODO: {tokens: tokenizer.Array_Main_Tokens(t), expectedXML: common.Array_Main_XML},
-		//TODO: {tokens: tokenizer.HelloWorld_Main_Tokens(t), expectedXML: common.HelloWorld_Main_XML},
-		//TODO: {tokens: tokenizer.Square_Main_Tokens(t), expectedXML: common.Square_Main_XML},
-		//TODO: {tokens: tokenizer.Square_Square_Tokens(t), expectedXML: common.Square_Square_XML},
-		//TODO: {tokens: tokenizer.Square_SquareGame_Tokens(t), expectedXML: common.Square_SquareGame_XML},
+		{tokens: tokenizer.Array_Main_Tokens(t), expectedXML: common.Array_Main_XML},
+		{tokens: tokenizer.HelloWorld_Main_Tokens(t), expectedXML: common.HelloWorld_Main_XML},
+		{tokens: tokenizer.Square_Main_Tokens(t), expectedXML: common.Square_Main_XML},
+		{tokens: tokenizer.Square_Square_Tokens(t), expectedXML: common.Square_Square_XML},
+		{tokens: tokenizer.Square_SquareGame_Tokens(t), expectedXML: common.Square_SquareGame_XML},
 		{tokens: tokenizer.SquareExpressionless_Main_Tokens(t), expectedXML: common.SquareExpressionless_Main_XML},
 		{tokens: tokenizer.SquareExpressionless_Square_Tokens(t), expectedXML: common.SquareExpressionless_Square_XML},
 		{tokens: tokenizer.SquareExpressionless_SquareGame_Tokens(t), expectedXML: common.SquareExpressionless_SquareGame_XML},
@@ -101,6 +101,171 @@ func TestCompileExpression(t *testing.T) {
 	for _, tc := range tests {
 		engine := NewCompilationEngine(tc.tokens)
 		tree := engine.compileExpression()
+		assert.Equal(t, tc.expectedTree, tree)
+	}
+}
+
+func TestCompileTerm(t *testing.T) {
+	type test struct {
+		tokens       []tokenizer.Token
+		expectedTree *Node
+	}
+	tests := []test{
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeIntegerConstant, Value: "0"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "integerConstant", Value: "0", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeStringConstant, Value: "abc"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "stringConstant", Value: "abc", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeKeyword, Value: "true"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "keyword", Value: "true", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeKeyword, Value: "false"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "keyword", Value: "false", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeKeyword, Value: "null"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "keyword", Value: "null", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeKeyword, Value: "this"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "keyword", Value: "this", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "varName"},
+				{TypeOf: tokenizer.TokenTypeStringConstant, Value: "anything..."}, // there should always be more tokens in a valid jack class (no need guard against out of range in code)
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "identifier", Value: "varName", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "arr"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "["},
+				{TypeOf: tokenizer.TokenTypeIntegerConstant, Value: "0"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "]"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "identifier", Value: "arr", Children: []Node{}},
+				{Name: "symbol", Value: "[", Children: []Node{}},
+				{Name: "expression", Value: "", Children: []Node{
+					{Name: "term", Value: "", Children: []Node{
+						{Name: "integerConstant", Value: "0", Children: []Node{}},
+					}},
+				}},
+				{Name: "symbol", Value: "]", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "subroutineName"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "("},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: ")"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "identifier", Value: "subroutineName", Children: []Node{}},
+				{Name: "symbol", Value: "(", Children: []Node{}},
+				{Name: "expressionList", Value: "", Children: []Node{}},
+				{Name: "symbol", Value: ")", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "ClassName"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "."},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "subroutineName"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "("},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: ")"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "identifier", Value: "ClassName", Children: []Node{}},
+				{Name: "symbol", Value: ".", Children: []Node{}},
+				{Name: "identifier", Value: "subroutineName", Children: []Node{}},
+				{Name: "symbol", Value: "(", Children: []Node{}},
+				{Name: "expressionList", Value: "", Children: []Node{}},
+				{Name: "symbol", Value: ")", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "("},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "-"},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "x"},
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: ")"},
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "symbol", Value: "(", Children: []Node{}},
+				{Name: "expression", Value: "", Children: []Node{
+					{Name: "term", Value: "", Children: []Node{
+						{Name: "symbol", Value: "-", Children: []Node{}},
+						{Name: "term", Value: "", Children: []Node{
+							{Name: "identifier", Value: "x", Children: []Node{}},
+						}},
+					}},
+				}},
+				{Name: "symbol", Value: ")", Children: []Node{}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "-"},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "x"},
+				{TypeOf: tokenizer.TokenTypeStringConstant, Value: "anything..."}, // there should always be more tokens in a valid jack class (no need guard against out of range in code)
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "symbol", Value: "-", Children: []Node{}},
+				{Name: "term", Value: "", Children: []Node{
+					{Name: "identifier", Value: "x", Children: []Node{}},
+				}},
+			}},
+		},
+		{
+			tokens: []tokenizer.Token{
+				{TypeOf: tokenizer.TokenTypeSymbol, Value: "~"},
+				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "x"},
+				{TypeOf: tokenizer.TokenTypeStringConstant, Value: "anything..."}, // there should always be more tokens in a valid jack class (no need guard against out of range in code)
+			},
+			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
+				{Name: "symbol", Value: "~", Children: []Node{}},
+				{Name: "term", Value: "", Children: []Node{
+					{Name: "identifier", Value: "x", Children: []Node{}},
+				}},
+			}},
+		},
+	}
+	for _, tc := range tests {
+		engine := NewCompilationEngine(tc.tokens)
+		tree := engine.compileTerm()
 		assert.Equal(t, tc.expectedTree, tree)
 	}
 }

@@ -25,6 +25,27 @@ func TestIsClassVarDec(t *testing.T) {
 	}
 }
 
+func TestIsKeywordConstant(t *testing.T) {
+	type test struct {
+		token          Token
+		expectedResult bool
+	}
+	tests := []test{
+		{token: Token{TypeOf: TokenTypeKeyword, Value: "true"}, expectedResult: true},
+		{token: Token{TypeOf: TokenTypeKeyword, Value: "false"}, expectedResult: true},
+		{token: Token{TypeOf: TokenTypeKeyword, Value: "null"}, expectedResult: true},
+		{token: Token{TypeOf: TokenTypeKeyword, Value: "this"}, expectedResult: true},
+		{token: Token{TypeOf: TokenTypeKeyword, Value: "other"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeIdentifier, Value: "true"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeIntegerConstant, Value: "false"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeStringConstant, Value: "null"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeSymbol, Value: "this"}, expectedResult: false},
+	}
+	for _, tc := range tests {
+		assert.Equal(t, tc.expectedResult, tc.token.IsKeywordConstant())
+	}
+}
+
 func TestIsOp(t *testing.T) {
 	type test struct {
 		token          Token
@@ -109,5 +130,24 @@ func TestIsTypeOrVoid(t *testing.T) {
 	}
 	for _, tc := range tests {
 		assert.Equal(t, tc.expectedResult, tc.token.IsTypeOrVoid())
+	}
+}
+
+func TestIsUnaryOp(t *testing.T) {
+	type test struct {
+		token          Token
+		expectedResult bool
+	}
+	tests := []test{
+		{token: Token{TypeOf: TokenTypeSymbol, Value: "-"}, expectedResult: true},
+		{token: Token{TypeOf: TokenTypeSymbol, Value: "~"}, expectedResult: true},
+		{token: Token{TypeOf: TokenTypeSymbol, Value: "other"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeIdentifier, Value: "-"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeIntegerConstant, Value: "~"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeKeyword, Value: "-"}, expectedResult: false},
+		{token: Token{TypeOf: TokenTypeStringConstant, Value: "~"}, expectedResult: false},
+	}
+	for _, tc := range tests {
+		assert.Equal(t, tc.expectedResult, tc.token.IsUnaryOp())
 	}
 }

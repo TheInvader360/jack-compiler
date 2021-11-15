@@ -25,6 +25,16 @@ func (t *Token) IsClassVarDec() bool {
 	return true
 }
 
+func (t *Token) IsKeywordConstant() bool {
+	if t.TypeOf != TokenTypeKeyword {
+		return false
+	}
+	if t.Value != "true" && t.Value != "false" && t.Value != "null" && t.Value != "this" {
+		return false
+	}
+	return true
+}
+
 func (t *Token) IsOp() bool {
 	if t.TypeOf != TokenTypeSymbol {
 		return false
@@ -57,4 +67,14 @@ func (t *Token) IsType() bool {
 
 func (t *Token) IsTypeOrVoid() bool {
 	return t.IsType() || (t.TypeOf == TokenTypeKeyword && t.Value == "void")
+}
+
+func (t *Token) IsUnaryOp() bool {
+	if t.TypeOf != TokenTypeSymbol {
+		return false
+	}
+	if t.Value != "-" && t.Value != "~" {
+		return false
+	}
+	return true
 }
