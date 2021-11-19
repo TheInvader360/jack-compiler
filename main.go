@@ -47,8 +47,9 @@ func main() {
 			writeFile(tokenizer.AsXML(tokens), strings.Replace(file, ".jack", "T.xml", 1))
 
 			engine := engine.NewCompilationEngine(tokens)
-			tree := engine.CompileClass()
+			tree, vmCode := engine.CompileClass()
 			writeFile(tree, strings.Replace(file, ".jack", ".xml", 1))
+			writeFile(vmCode, strings.Replace(file, ".jack", ".vm", 1))
 		}
 	}
 }

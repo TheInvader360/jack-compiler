@@ -5,7 +5,6 @@ import (
 
 	"github.com/TheInvader360/jack-compiler/common"
 	"github.com/TheInvader360/jack-compiler/tokenizer"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +15,7 @@ func TestNewCompilationEngine(t *testing.T) {
 	assert.Equal(t, 0, engine.tokenIndex)
 }
 
-func TestCompileClass(t *testing.T) {
+func TestCompileClassXML(t *testing.T) {
 	type test struct {
 		tokens      []tokenizer.Token
 		expectedXML string
@@ -33,8 +32,34 @@ func TestCompileClass(t *testing.T) {
 	}
 	for _, tc := range tests {
 		engine := NewCompilationEngine(tc.tokens)
-		tree := engine.CompileClass()
+		tree, _ := engine.CompileClass()
 		assert.Equal(t, tc.expectedXML, tree)
+	}
+}
+
+func TestCompileClassVM(t *testing.T) {
+	type test struct {
+		jack       string
+		expectedVM string
+	}
+	tests := []test{
+		{jack: common.Seven_Main_Jack, expectedVM: common.Seven_Main_VM},
+		//TODO: {jack: common.ConvertToBin_Main_Jack, expectedVM: common.ConvertToBin_Main_VM},
+		//TODO: {jack: common.Square_Main_Jack, expectedVM: common.Square_Main_VM},
+		//TODO: {jack: common.Square_Square_Jack, expectedVM: common.Square_Square_VM},
+		//TODO: {jack: common.Square_SquareGame_Jack, expectedVM: common.Square_SquareGame_VM},
+		//TODO: {jack: common.Average_Main_Jack, expectedVM: common.Average_Main_VM},
+		//TODO: {jack: common.Pong_Ball_Jack, expectedVM: common.Pong_Ball_VM},
+		//TODO: {jack: common.Pong_Bat_Jack, expectedVM: common.Pong_Bat_VM},
+		//TODO: {jack: common.Pong_Main_Jack, expectedVM: common.Pong_Main_VM},
+		//TODO: {jack: common.Pong_PongGame_Jack, expectedVM: common.Pong_PongGame_VM},
+		//TODO: {jack: common.ComplexArrays_Main_Jack, expectedVM: common.ComplexArrays_Main_VM},
+	}
+	for _, tc := range tests {
+		tokens := tokenizer.Tokenize([]byte(tc.jack))
+		engine := NewCompilationEngine(tokens)
+		_, vmCode := engine.CompileClass()
+		assert.Equal(t, tc.expectedVM, vmCode)
 	}
 }
 

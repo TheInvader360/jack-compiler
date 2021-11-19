@@ -10,11 +10,13 @@ type Node struct {
 	Children []Node
 }
 
+// AddChild - adds a child node to the node
 func (n *Node) AddChild(node Node) {
 	//fmt.Println("AddChild", node.Name, node.Value)
 	n.Children = append(n.Children, node)
 }
 
+// AsXML - returns the node/tree as xml
 func (n *Node) AsXML() string {
 	xml := ""
 

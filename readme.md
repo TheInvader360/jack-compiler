@@ -24,4 +24,3 @@ go run main.go examples/Square/
 ```
 
 Translates all .jack files in the specified directory and exports them all to the same directory with the same base filename but a .vm extension
-
