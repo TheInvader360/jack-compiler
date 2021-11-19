@@ -15,6 +15,7 @@ const (
 	identifier      = `(?m)([A-Za-z_]\w*)`
 )
 
+// Tokenize - tokenize the given jack source
 func Tokenize(jackSource []byte) []Token {
 	commentRegexp := regexp.MustCompile(comment)
 	keywordRegexp := regexp.MustCompile(keyword)
@@ -33,6 +34,12 @@ func Tokenize(jackSource []byte) []Token {
 		switch {
 		case keywordRegexp.MatchString(tokenValue):
 			tokens = append(tokens, Token{TypeOf: TokenTypeKeyword, Value: tokenValue})
+		case integerConstantRegexp.MatchString(tokenValue):
+			tokens = append(tokens, Token{TypeOf: TokenTypeIntegerConstant, Value: tokenValue})
+		case stringConstantRegexp.MatchString(tokenValue):
+			tokens = append(tokens, Token{TypeOf: TokenTypeStringConstant, Value: strings.ReplaceAll(tokenValue, "\"", "")})
+		case identifierRegexp.MatchString(tokenValue):
+			tokens = append(tokens, Token{TypeOf: TokenTypeIdentifier, Value: tokenValue})
 		case symbolRegexp.MatchString(tokenValue):
 			if tokenValue == "<" {
 				tokenValue = "&lt;"
@@ -44,18 +51,13 @@ func Tokenize(jackSource []byte) []Token {
 				tokenValue = "&amp;"
 			}
 			tokens = append(tokens, Token{TypeOf: TokenTypeSymbol, Value: tokenValue})
-		case integerConstantRegexp.MatchString(tokenValue):
-			tokens = append(tokens, Token{TypeOf: TokenTypeIntegerConstant, Value: tokenValue})
-		case stringConstantRegexp.MatchString(tokenValue):
-			tokens = append(tokens, Token{TypeOf: TokenTypeStringConstant, Value: strings.ReplaceAll(tokenValue, "\"", "")})
-		case identifierRegexp.MatchString(tokenValue):
-			tokens = append(tokens, Token{TypeOf: TokenTypeIdentifier, Value: tokenValue})
 		}
 	}
 
 	return tokens
 }
 
+// AsXML - returns the given list of tokens as xml
 func AsXML(tokens []Token) string {
 	xml := "<tokens>\n"
 	for _, token := range tokens {

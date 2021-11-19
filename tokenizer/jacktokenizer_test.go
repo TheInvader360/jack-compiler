@@ -21,6 +21,7 @@ func TestTokenize(t *testing.T) {
 		{jackSource: []byte(common.SquareExpressionless_Main_Jack), expectedTokens: SquareExpressionless_Main_Tokens(t)},
 		{jackSource: []byte(common.SquareExpressionless_Square_Jack), expectedTokens: SquareExpressionless_Square_Tokens(t)},
 		{jackSource: []byte(common.SquareExpressionless_SquareGame_Jack), expectedTokens: SquareExpressionless_SquareGame_Tokens(t)},
+		{jackSource: []byte(`"semicolon;test"`), expectedTokens: []Token{{TypeOf: TokenTypeStringConstant, Value: "semicolon;test"}}}, // string constants containing semicolons were registering as symbols (logic bug fixed!)
 	}
 	for _, tc := range tests {
 		tokens := Tokenize(tc.jackSource)
