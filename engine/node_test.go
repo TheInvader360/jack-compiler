@@ -35,3 +35,18 @@ func TestAsXML(t *testing.T) {
 		assert.Equal(t, tc.expectedXML, xml)
 	}
 }
+
+func TestAsExtendedXML(t *testing.T) {
+	type test struct {
+		tree        Node
+		expectedXML string
+	}
+	tests := []test{
+		{tree: HelloWorld_Main_Tree(t), expectedXML: common.HelloWorld_MainE_XML},
+		//TODO: more test cases
+	}
+	for _, tc := range tests {
+		xml := tc.tree.AsExtendedXML()
+		assert.Equal(t, tc.expectedXML, xml)
+	}
+}

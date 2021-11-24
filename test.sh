@@ -1,14 +1,16 @@
 go test ./... --cover
 
-go run main.go examples/Array
-go run main.go examples/Average
-go run main.go examples/ComplexArrays
-go run main.go examples/ConvertToBin
-go run main.go examples/HelloWorld
-go run main.go examples/Pong
-go run main.go examples/Seven
-go run main.go examples/Square
-go run main.go examples/SquareExpressionless
+go run main.go -path=examples/Array
+go run main.go -path=examples/Average
+go run main.go -path=examples/ComplexArrays
+go run main.go -path=examples/ConvertToBin
+go run main.go -path=examples/HelloWorld
+go run main.go -path=examples/Pong
+go run main.go -path=examples/Seven
+go run main.go -path=examples/SimpleIf
+go run main.go -path=examples/SimpleWhile
+go run main.go -path=examples/Square
+go run main.go -path=examples/SquareExpressionless
 
 cd ../nand2tetris/tools/
 ./TextComparer.sh ../projects/10/materials/ArrayTest/MainT.xml ../../jack-compiler/examples/Array/MainT.xml 

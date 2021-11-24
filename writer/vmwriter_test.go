@@ -29,11 +29,11 @@ func TestWriteArithmetic(t *testing.T) {
 	vmw.WriteArithmetic("-")
 	vmw.WriteArithmetic("*")
 	vmw.WriteArithmetic("/")
-	vmw.WriteArithmetic("&")
+	vmw.WriteArithmetic("&amp;")
 	vmw.WriteArithmetic("|")
-	vmw.WriteArithmetic("<")
+	vmw.WriteArithmetic("&lt;")
 	vmw.WriteArithmetic("=")
-	vmw.WriteArithmetic(">")
+	vmw.WriteArithmetic("&gt;")
 	vmw.WriteArithmetic("neg")
 	vmw.WriteArithmetic("not")
 	assert.Equal(t, "add\nsub\ncall Math.multiply 2\ncall Math.divide 2\nand\nor\nlt\neq\ngt\nneg\nnot\n", vmw.Code)
@@ -73,10 +73,4 @@ func TestWriteReturn(t *testing.T) {
 	vmw := NewVMWriter()
 	vmw.WriteReturn()
 	assert.Equal(t, "return\n", vmw.Code)
-}
-
-func TestWriteComment(t *testing.T) {
-	vmw := NewVMWriter()
-	vmw.WriteComment("Comment")
-	assert.Equal(t, "// Comment\n", vmw.Code)
 }

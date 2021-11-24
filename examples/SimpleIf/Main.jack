@@ -1,0 +1,36 @@
+class Main {
+    function void main () {
+        var int x;
+        var int y;
+        var int z;
+        let x = 0;
+        let y = 0;
+        let z = 0;
+
+        if (x = 0) {
+            if (y = 0) {
+                let z = 0;
+            }
+            else {
+                let z = 1;
+            }
+        }
+        else {
+            let z = 2;
+        }
+
+        if (y = 0) {
+            let z = 3;
+        }
+        else {
+            let z = 4;
+        }
+
+        if (z = 0) {
+            let z = 5;
+        }
+
+        return;
+    }
+}
+

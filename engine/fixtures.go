@@ -294,12 +294,12 @@ func Array_Main_Tree(t *testing.T) Node {
 func HelloWorld_Main_Tree(t *testing.T) Node {
 	return Node{Name: "class", Value: "", Children: []Node{
 		{Name: "keyword", Value: "class", Children: []Node{}},
-		{Name: "identifier", Value: "Main", Children: []Node{}},
+		{Name: "identifier", Value: "Main", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 		{Name: "symbol", Value: "{", Children: []Node{}},
 		{Name: "subroutineDec", Value: "", Children: []Node{
 			{Name: "keyword", Value: "function", Children: []Node{}},
 			{Name: "keyword", Value: "void", Children: []Node{}},
-			{Name: "identifier", Value: "main", Children: []Node{}},
+			{Name: "identifier", Value: "main", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 			{Name: "symbol", Value: "(", Children: []Node{}},
 			{Name: "parameterList", Value: "", Children: []Node{}},
 			{Name: "symbol", Value: ")", Children: []Node{}},
@@ -308,9 +308,9 @@ func HelloWorld_Main_Tree(t *testing.T) Node {
 				{Name: "statements", Value: "", Children: []Node{
 					{Name: "doStatement", Value: "", Children: []Node{
 						{Name: "keyword", Value: "do", Children: []Node{}},
-						{Name: "identifier", Value: "Output", Children: []Node{}},
+						{Name: "identifier", Value: "Output", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 						{Name: "symbol", Value: ".", Children: []Node{}},
-						{Name: "identifier", Value: "printString", Children: []Node{}},
+						{Name: "identifier", Value: "printString", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 						{Name: "symbol", Value: "(", Children: []Node{}},
 						{Name: "expressionList", Value: "", Children: []Node{
 							{Name: "expression", Value: "", Children: []Node{

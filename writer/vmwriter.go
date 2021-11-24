@@ -32,15 +32,15 @@ func (vmw *VMWriter) WriteArithmetic(command string) {
 		command = "call Math.multiply 2"
 	case "/":
 		command = "call Math.divide 2"
-	case "&":
+	case "&amp;":
 		command = "and"
 	case "|":
 		command = "or"
-	case "<":
+	case "&lt;":
 		command = "lt"
 	case "=":
 		command = "eq"
-	case ">":
+	case "&gt;":
 		command = "gt"
 	}
 	// "neg" and "not" commands remain unaltered
@@ -75,9 +75,4 @@ func (vmw *VMWriter) WriteFunction(name string, nLocals int) {
 // WriteReturn - writes a vm return command
 func (vmw *VMWriter) WriteReturn() {
 	vmw.Code += "return\n"
-}
-
-// WriteComment - writes a vm comment
-func (vmw *VMWriter) WriteComment(comment string) {
-	vmw.Code += fmt.Sprintf("// %s\n", comment)
 }

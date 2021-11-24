@@ -1,5 +1,7 @@
 package symbols
 
+import "fmt"
+
 type SymbolKind string
 
 const (
@@ -74,8 +76,8 @@ func (st *SymbolTable) getVarCount(kind SymbolKind) int {
 	return varCount
 }
 
-// getTypeOf - Returns the type of the given identifier
-func (cst *CombinedSymbolTable) getTypeOf(identifierName string) string {
+// GetTypeOf - Returns the type of the given identifier
+func (cst *CombinedSymbolTable) GetTypeOf(identifierName string) string {
 	if symbol, ok := cst.classScopeSymbolTable[identifierName]; ok {
 		return symbol.typeOf
 	}
@@ -86,8 +88,8 @@ func (cst *CombinedSymbolTable) getTypeOf(identifierName string) string {
 	return ""
 }
 
-// getKindOf - Returns the kind of the given identifier
-func (cst *CombinedSymbolTable) getKindOf(identifierName string) SymbolKind {
+// GetKindOf - Returns the kind of the given identifier
+func (cst *CombinedSymbolTable) GetKindOf(identifierName string) SymbolKind {
 	if symbol, ok := cst.classScopeSymbolTable[identifierName]; ok {
 		return symbol.kindOf
 	}
@@ -98,8 +100,8 @@ func (cst *CombinedSymbolTable) getKindOf(identifierName string) SymbolKind {
 	return SymbolKindUnknown
 }
 
-// getIndexOf - Returns the index of the given identifier
-func (cst *CombinedSymbolTable) getIndexOf(identifierName string) int {
+// GetIndexOf - Returns the index of the given identifier
+func (cst *CombinedSymbolTable) GetIndexOf(identifierName string) int {
 	if symbol, ok := cst.classScopeSymbolTable[identifierName]; ok {
 		return symbol.indexOf
 	}
@@ -108,4 +110,8 @@ func (cst *CombinedSymbolTable) getIndexOf(identifierName string) int {
 	}
 
 	return -1
+}
+
+func (cst *CombinedSymbolTable) String() string {
+	return fmt.Sprintf("\nC: %+v\nS: %+v\n", cst.classScopeSymbolTable, cst.subroutineScopeSymbolTable)
 }

@@ -10,7 +10,7 @@ import (
 
 func TestNewCompilationEngine(t *testing.T) {
 	tokens := []tokenizer.Token{}
-	engine := NewCompilationEngine(tokens)
+	engine := NewCompilationEngine(tokens, false)
 	assert.Equal(t, tokens, engine.tokens)
 	assert.Equal(t, 0, engine.tokenIndex)
 }
@@ -31,8 +31,24 @@ func TestCompileClassXML(t *testing.T) {
 		{tokens: tokenizer.SquareExpressionless_SquareGame_Tokens(t), expectedXML: common.SquareExpressionless_SquareGame_XML},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens)
-		tree, _ := engine.CompileClass()
+		engine := NewCompilationEngine(tc.tokens, false)
+		tree, _, _ := engine.CompileClass()
+		assert.Equal(t, tc.expectedXML, tree)
+	}
+}
+
+func TestCompileClassAsExtendedXML(t *testing.T) {
+	type test struct {
+		tokens      []tokenizer.Token
+		expectedXML string
+	}
+	tests := []test{
+		{tokens: tokenizer.HelloWorld_Main_Tokens(t), expectedXML: common.HelloWorld_MainE_XML},
+		//TODO: more test cases
+	}
+	for _, tc := range tests {
+		engine := NewCompilationEngine(tc.tokens, false)
+		_, tree, _ := engine.CompileClass()
 		assert.Equal(t, tc.expectedXML, tree)
 	}
 }
@@ -44,7 +60,9 @@ func TestCompileClassVM(t *testing.T) {
 	}
 	tests := []test{
 		{jack: common.Seven_Main_Jack, expectedVM: common.Seven_Main_VM},
-		//TODO: {jack: common.ConvertToBin_Main_Jack, expectedVM: common.ConvertToBin_Main_VM},
+		{jack: common.SimpleIf_Main_Jack, expectedVM: common.SimpleIf_Main_VM},
+		{jack: common.SimpleWhile_Main_Jack, expectedVM: common.SimpleWhile_Main_VM},
+		{jack: common.ConvertToBin_Main_Jack, expectedVM: common.ConvertToBin_Main_VM},
 		//TODO: {jack: common.Square_Main_Jack, expectedVM: common.Square_Main_VM},
 		//TODO: {jack: common.Square_Square_Jack, expectedVM: common.Square_Square_VM},
 		//TODO: {jack: common.Square_SquareGame_Jack, expectedVM: common.Square_SquareGame_VM},
@@ -57,8 +75,8 @@ func TestCompileClassVM(t *testing.T) {
 	}
 	for _, tc := range tests {
 		tokens := tokenizer.Tokenize([]byte(tc.jack))
-		engine := NewCompilationEngine(tokens)
-		_, vmCode := engine.CompileClass()
+		engine := NewCompilationEngine(tokens, false)
+		_, _, vmCode := engine.CompileClass()
 		assert.Equal(t, tc.expectedVM, vmCode)
 	}
 }
@@ -72,7 +90,7 @@ func TestCompileVarDec(t *testing.T) {
 		{
 			tokens: []tokenizer.Token{
 				{TypeOf: tokenizer.TokenTypeKeyword, Value: "var"},
-				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "int"},
+				{TypeOf: tokenizer.TokenTypeKeyword, Value: "int"},
 				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "a"},
 				{TypeOf: tokenizer.TokenTypeSymbol, Value: ","},
 				{TypeOf: tokenizer.TokenTypeIdentifier, Value: "b"},
@@ -82,18 +100,18 @@ func TestCompileVarDec(t *testing.T) {
 			},
 			expectedTree: &Node{Name: "varDec", Value: "", Children: []Node{
 				{Name: "keyword", Value: "var", Children: []Node{}},
-				{Name: "identifier", Value: "int", Children: []Node{}},
-				{Name: "identifier", Value: "a", Children: []Node{}},
+				{Name: "keyword", Value: "int", Children: []Node{}},
+				{Name: "identifier", Value: "a", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: ",", Children: []Node{}},
-				{Name: "identifier", Value: "b", Children: []Node{}},
+				{Name: "identifier", Value: "b", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: ",", Children: []Node{}},
-				{Name: "identifier", Value: "c", Children: []Node{}},
+				{Name: "identifier", Value: "c", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: ";", Children: []Node{}},
 			}},
 		},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens)
+		engine := NewCompilationEngine(tc.tokens, false)
 		tree := engine.compileVarDec()
 		assert.Equal(t, tc.expectedTree, tree)
 	}
@@ -114,17 +132,17 @@ func TestCompileExpression(t *testing.T) {
 			},
 			expectedTree: &Node{Name: "expression", Value: "", Children: []Node{
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "a", Children: []Node{}},
+					{Name: "identifier", Value: "a", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				}},
 				{Name: "symbol", Value: "+", Children: []Node{}},
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "b", Children: []Node{}},
+					{Name: "identifier", Value: "b", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				}},
 			}},
 		},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens)
+		engine := NewCompilationEngine(tc.tokens, false)
 		tree := engine.compileExpression()
 		assert.Equal(t, tc.expectedTree, tree)
 	}
@@ -190,7 +208,7 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeStringConstant, Value: "anything..."}, // there should always be more tokens in a valid jack class (no need guard against out of range in code)
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "varName", Children: []Node{}},
+				{Name: "identifier", Value: "varName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 			}},
 		},
 		{
@@ -201,7 +219,7 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeSymbol, Value: "]"},
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "arr", Children: []Node{}},
+				{Name: "identifier", Value: "arr", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: "[", Children: []Node{}},
 				{Name: "expression", Value: "", Children: []Node{
 					{Name: "term", Value: "", Children: []Node{
@@ -218,7 +236,7 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeSymbol, Value: ")"},
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "subroutineName", Children: []Node{}},
+				{Name: "identifier", Value: "subroutineName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: "(", Children: []Node{}},
 				{Name: "expressionList", Value: "", Children: []Node{}},
 				{Name: "symbol", Value: ")", Children: []Node{}},
@@ -233,9 +251,9 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeSymbol, Value: ")"},
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "ClassName", Children: []Node{}},
+				{Name: "identifier", Value: "ClassName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: ".", Children: []Node{}},
-				{Name: "identifier", Value: "subroutineName", Children: []Node{}},
+				{Name: "identifier", Value: "subroutineName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: "(", Children: []Node{}},
 				{Name: "expressionList", Value: "", Children: []Node{}},
 				{Name: "symbol", Value: ")", Children: []Node{}},
@@ -254,7 +272,7 @@ func TestCompileTerm(t *testing.T) {
 					{Name: "term", Value: "", Children: []Node{
 						{Name: "symbol", Value: "-", Children: []Node{}},
 						{Name: "term", Value: "", Children: []Node{
-							{Name: "identifier", Value: "x", Children: []Node{}},
+							{Name: "identifier", Value: "x", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 						}},
 					}},
 				}},
@@ -270,7 +288,7 @@ func TestCompileTerm(t *testing.T) {
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
 				{Name: "symbol", Value: "-", Children: []Node{}},
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "x", Children: []Node{}},
+					{Name: "identifier", Value: "x", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				}},
 			}},
 		},
@@ -283,13 +301,13 @@ func TestCompileTerm(t *testing.T) {
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
 				{Name: "symbol", Value: "~", Children: []Node{}},
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "x", Children: []Node{}},
+					{Name: "identifier", Value: "x", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				}},
 			}},
 		},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens)
+		engine := NewCompilationEngine(tc.tokens, false)
 		tree := engine.compileTerm()
 		assert.Equal(t, tc.expectedTree, tree)
 	}

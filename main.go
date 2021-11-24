@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,27 +16,26 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		handler.FatalError(errors.New("Missing path parameter"))
-	}
-	path := os.Args[1]
+	path := flag.String("path", "examples/HelloWorld", "jack source path")
+	debug := flag.Bool("debug", false, "enable debug terminal output")
+	flag.Parse()
 
-	fileInfo, err := os.Stat(path)
+	fileInfo, err := os.Stat(*path)
 	handler.FatalError(err)
 
 	if fileInfo.IsDir() {
-		if strings.HasSuffix(path, "/") {
-			path += "*"
+		if strings.HasSuffix(*path, "/") {
+			*path += "*"
 		} else {
-			path += "/*"
+			*path += "/*"
 		}
 	} else {
-		if !strings.HasSuffix(path, ".jack") {
+		if !strings.HasSuffix(*path, ".jack") {
 			handler.FatalError(errors.New("Expected a jack file (*.jack)"))
 		}
 	}
 
-	files, err := filepath.Glob(path)
+	files, err := filepath.Glob(*path)
 	handler.FatalError(err)
 
 	for _, file := range files {
@@ -46,9 +46,10 @@ func main() {
 			tokens := tokenizer.Tokenize(jackData)
 			writeFile(tokenizer.AsXML(tokens), strings.Replace(file, ".jack", "T.xml", 1))
 
-			engine := engine.NewCompilationEngine(tokens)
-			tree, vmCode := engine.CompileClass()
+			engine := engine.NewCompilationEngine(tokens, *debug)
+			tree, extendedTree, vmCode := engine.CompileClass()
 			writeFile(tree, strings.Replace(file, ".jack", ".xml", 1))
+			writeFile(extendedTree, strings.Replace(file, ".jack", "S.xml", 1))
 			writeFile(vmCode, strings.Replace(file, ".jack", ".vm", 1))
 		}
 	}

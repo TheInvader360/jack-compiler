@@ -574,6 +574,69 @@ const Seven_Main_Jack string = `class Main {
 }
 `
 
+const SimpleIf_Main_Jack string = `class Main {
+    function void main () {
+        var int x;
+        var int y;
+        var int z;
+        let x = 0;
+        let y = 0;
+        let z = 0;
+
+        if (x = 0) {
+            if (y = 0) {
+                let z = 0;
+            }
+            else {
+                let z = 1;
+            }
+        }
+        else {
+            let z = 2;
+        }
+
+        if (y = 0) {
+            let z = 3;
+        }
+        else {
+            let z = 4;
+        }
+
+        if (z = 0) {
+            let z = 5;
+        }
+
+        return;
+    }
+}
+`
+
+const SimpleWhile_Main_Jack string = `class Main {
+    function void main () {
+        var int x;
+        var int y;
+        var int z;
+        let x = 0;
+        let y = 0;
+        let z = 0;
+
+        while (x < 3) {
+            while (y < 3) {
+                let y = y + 1;
+            }
+            let x = x + 1;
+            let y = 0;
+        }
+
+        while (z < 3) {
+            let z = z + 1;
+        }
+
+        return;
+    }
+}
+`
+
 const Square_Main_Jack string = `class Main {
     static boolean test;
     function void main() {
@@ -6952,6 +7015,51 @@ const SquareExpressionless_SquareGame_XML string = `<class>
 </class>
 `
 
+// ----- E_XML -----
+
+const HelloWorld_MainE_XML string = `<class>
+<keyword> class </keyword>
+<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> Main </identifier>
+<symbol> { </symbol>
+<subroutineDec>
+<keyword> function </keyword>
+<keyword> void </keyword>
+<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> main </identifier>
+<symbol> ( </symbol>
+<parameterList>
+</parameterList>
+<symbol> ) </symbol>
+<subroutineBody>
+<symbol> { </symbol>
+<statements>
+<doStatement>
+<keyword> do </keyword>
+<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> Output </identifier>
+<symbol> . </symbol>
+<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> printString </identifier>
+<symbol> ( </symbol>
+<expressionList>
+<expression>
+<term>
+<stringConstant> Hello World </stringConstant>
+</term>
+</expression>
+</expressionList>
+<symbol> ) </symbol>
+<symbol> ; </symbol>
+</doStatement>
+<returnStatement>
+<keyword> return </keyword>
+<symbol> ; </symbol>
+</returnStatement>
+</statements>
+<symbol> } </symbol>
+</subroutineBody>
+</subroutineDec>
+<symbol> } </symbol>
+</class>
+`
+
 // ----- VM -----
 
 const Average_Main_VM string = `function Main.main 4
@@ -8918,6 +9026,112 @@ call Math.multiply 2
 add
 call Output.printInt 1
 pop temp 0
+push constant 0
+return
+`
+
+const SimpleIf_Main_VM string = `function Main.main 3
+push constant 0
+pop local 0
+push constant 0
+pop local 1
+push constant 0
+pop local 2
+push local 0
+push constant 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 1
+push constant 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 0
+pop local 2
+goto IF_END1
+label IF_FALSE1
+push constant 1
+pop local 2
+label IF_END1
+goto IF_END0
+label IF_FALSE0
+push constant 2
+pop local 2
+label IF_END0
+push local 1
+push constant 0
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 3
+pop local 2
+goto IF_END2
+label IF_FALSE2
+push constant 4
+pop local 2
+label IF_END2
+push local 2
+push constant 0
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push constant 5
+pop local 2
+label IF_FALSE3
+push constant 0
+return
+`
+
+const SimpleWhile_Main_VM string = `function Main.main 3
+push constant 0
+pop local 0
+push constant 0
+pop local 1
+push constant 0
+pop local 2
+label WHILE_EXP0
+push local 0
+push constant 3
+lt
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 1
+push constant 3
+lt
+not
+if-goto WHILE_END1
+push local 1
+push constant 1
+add
+pop local 1
+goto WHILE_EXP1
+label WHILE_END1
+push local 0
+push constant 1
+add
+pop local 0
+push constant 0
+pop local 1
+goto WHILE_EXP0
+label WHILE_END0
+label WHILE_EXP2
+push local 2
+push constant 3
+lt
+not
+if-goto WHILE_END2
+push local 2
+push constant 1
+add
+pop local 2
+goto WHILE_EXP2
+label WHILE_END2
 push constant 0
 return
 `

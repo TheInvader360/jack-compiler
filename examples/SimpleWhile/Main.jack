@@ -1,0 +1,25 @@
+class Main {
+    function void main () {
+        var int x;
+        var int y;
+        var int z;
+        let x = 0;
+        let y = 0;
+        let z = 0;
+
+        while (x < 3) {
+            while (y < 3) {
+                let y = y + 1;
+            }
+            let x = x + 1;
+            let y = 0;
+        }
+
+        while (z < 3) {
+            let z = z + 1;
+        }
+
+        return;
+    }
+}
+
