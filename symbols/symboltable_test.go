@@ -79,5 +79,5 @@ func TestEverything(t *testing.T) {
 	assert.Equal(t, SymbolKindUnknown, cst.GetKindOf("Unknown"))
 	assert.Equal(t, -1, cst.GetIndexOf("Unknown"))
 
-	assert.Equal(t, "\nC: map[f1:{identifierName:f1 typeOf:char kindOf:field indexOf:0} f2:{identifierName:f2 typeOf:SomeClassName kindOf:field indexOf:1} f3:{identifierName:f3 typeOf:SomeClassName kindOf:field indexOf:2} s1:{identifierName:s1 typeOf:boolean kindOf:static indexOf:0} s2:{identifierName:s2 typeOf:int kindOf:static indexOf:1} s3:{identifierName:s3 typeOf:Anything kindOf:static indexOf:2}]\nS: map[a3:{identifierName:a3 typeOf:SomeClassName kindOf:argument indexOf:0} v3:{identifierName:v3 typeOf:SomeClassName kindOf:local indexOf:0}]\n", cst.String())
+	assert.Equal(t, " | C: map[f1:{identifierName:f1 typeOf:char kindOf:field indexOf:0} f2:{identifierName:f2 typeOf:SomeClassName kindOf:field indexOf:1} f3:{identifierName:f3 typeOf:SomeClassName kindOf:field indexOf:2} s1:{identifierName:s1 typeOf:boolean kindOf:static indexOf:0} s2:{identifierName:s2 typeOf:int kindOf:static indexOf:1} s3:{identifierName:s3 typeOf:Anything kindOf:static indexOf:2}] | S: map[a3:{identifierName:a3 typeOf:SomeClassName kindOf:argument indexOf:0} v3:{identifierName:v3 typeOf:SomeClassName kindOf:local indexOf:0}]", cst.String())
 }

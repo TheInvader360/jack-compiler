@@ -28,12 +28,12 @@ func NewCompilationEngine(tokens []tokenizer.Token, debug bool) *CompilationEngi
 		tokens:      tokens,
 		debug:       debug,
 		cst:         symbols.NewCombinedSymbolTable(),
-		vmw:         writer.NewVMWriter(),
+		vmw:         writer.NewVMWriter(debug),
 		labelCounts: map[string]int{},
 	}
 
 	if ce.debug {
-		fmt.Println("NewCompilationEngine()", ce.cst)
+		fmt.Println("CompilationEngine.NewCompilationEngine()", ce.cst)
 	}
 
 	return &ce
@@ -82,7 +82,7 @@ func (ce *CompilationEngine) CompileClass() (string, string, string) {
 	ce.advance()
 
 	if ce.debug {
-		fmt.Println("CompileClass()", ce.cst)
+		fmt.Println("CompilationEngine.CompileClass()", ce.cst)
 	}
 
 	return node.AsXML(), node.AsExtendedXML(), ce.vmw.Code
@@ -130,7 +130,7 @@ func (ce *CompilationEngine) compileClassVarDec() *Node {
 	ce.advance()
 
 	if ce.debug {
-		fmt.Println("compileClassVarDec()", ce.cst)
+		fmt.Println("CompilationEngine.compileClassVarDec()", ce.cst)
 	}
 
 	return &node
@@ -184,7 +184,7 @@ func (ce *CompilationEngine) compileSubroutineDec() *Node {
 	}
 
 	if ce.debug {
-		fmt.Println("compileSubroutineDec()", ce.cst)
+		fmt.Println("CompilationEngine.compileSubroutineDec()", ce.cst)
 	}
 
 	return &node
@@ -209,7 +209,7 @@ func (ce *CompilationEngine) compileParameterList() *Node {
 	}
 
 	if ce.debug {
-		fmt.Println("compileParameterList()", ce.cst)
+		fmt.Println("CompilationEngine.compileParameterList()", ce.cst)
 	}
 
 	return &node
@@ -230,7 +230,7 @@ func (ce *CompilationEngine) addParameter(node *Node) *Node {
 	ce.advance()
 
 	if ce.debug {
-		fmt.Println("addParameter()", ce.cst)
+		fmt.Println("CompilationEngine.addParameter()", ce.cst)
 	}
 
 	return node
@@ -268,7 +268,7 @@ func (ce *CompilationEngine) compileSubroutineBody(subroutineName string) *Node 
 	ce.advance()
 
 	if ce.debug {
-		fmt.Println("compileSubroutineBody()", ce.cst)
+		fmt.Println("CompilationEngine.compileSubroutineBody()", ce.cst)
 	}
 
 	return &node
@@ -316,7 +316,7 @@ func (ce *CompilationEngine) compileVarDec() *Node {
 	ce.advance()
 
 	if ce.debug {
-		fmt.Println("compileVarDec()", ce.cst)
+		fmt.Println("CompilationEngine.compileVarDec()", ce.cst)
 	}
 
 	return &node
@@ -363,7 +363,7 @@ func (ce *CompilationEngine) compileStatements() *Node {
 	}()
 
 	if ce.debug {
-		fmt.Println("compileStatements()", ce.cst)
+		fmt.Println("CompilationEngine.compileStatements()", ce.cst)
 	}
 
 	return &node
@@ -381,29 +381,44 @@ func (ce *CompilationEngine) compileDoStatement() *Node {
 
 	ce.validateCurrentToken(tokenizer.TokenTypeIdentifier, []string{})
 	node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // subroutineCall: subroutineName OR (className | varName)
-	vmName := ce.currentToken().Value
+	classOrVarName := ce.currentToken().Value
+	classOrVarType := ce.cst.GetTypeOf(classOrVarName)
+	vmClassName := classOrVarName
+	vmSubroutineName := ""
+	vmNumArgs := 0
 	ce.advance()
 
 	if ce.currentToken().Value == "." { // the previous token was actually (className | varName), and should be followed by '.' and then subroutineName before continuing...
 		ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"."})
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '.'
-		vmName += "."
 		ce.advance()
 
 		ce.validateCurrentToken(tokenizer.TokenTypeIdentifier, []string{})
 		node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // subroutineName
-		vmName += ce.currentToken().Value
+		vmSubroutineName = ce.currentToken().Value
 		ce.advance()
+	} else { // the previous token was actually the subroutineName...
+		vmSubroutineName = vmClassName
+		vmClassName = ce.className
+		vmNumArgs++
+		ce.vmw.WritePush(writer.SegmentPointer, 0) // vm write: push pointer n
+	}
+
+	if classOrVarType != "" {
+		ce.vmw.WritePush(writer.Segment(ce.cst.GetKindOf(vmClassName)), ce.cst.GetIndexOf(vmClassName)) // vm write: push segment n
+		vmNumArgs++
+		vmClassName = classOrVarType
 	}
 
 	ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"("})
 	node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '('
 	ce.advance()
 
-	expressionList, numArgs := ce.compileExpressionList()
+	expressionList, numExpressionListArgs := ce.compileExpressionList()
 	if expressionList != nil {
 		node.AddChild(*expressionList) // expressionList
 	}
+	vmNumArgs += numExpressionListArgs
 
 	ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{")"})
 	node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ')'
@@ -413,11 +428,11 @@ func (ce *CompilationEngine) compileDoStatement() *Node {
 	node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ';'
 	ce.advance()
 
-	ce.vmw.WriteCall(vmName, numArgs)      // vm write: call className.subroutineName n
-	ce.vmw.WritePop(writer.SegmentTemp, 0) // vm write: pop temp 0
+	ce.vmw.WriteCall(fmt.Sprintf("%s.%s", vmClassName, vmSubroutineName), vmNumArgs) // vm write: call className.subroutineName n
+	ce.vmw.WritePop(writer.SegmentTemp, 0)                                           // vm write: pop temp 0
 
 	if ce.debug {
-		fmt.Println("compileDoStatement()", ce.cst)
+		fmt.Println("CompilationEngine.compileDoStatement()", ce.cst)
 	}
 
 	return &node
@@ -496,7 +511,7 @@ func (ce *CompilationEngine) compileIfStatement() *Node {
 	}
 
 	if ce.debug {
-		fmt.Println("compileIfStatement()", ce.cst)
+		fmt.Println("CompilationEngine.compileIfStatement()", ce.cst)
 	}
 
 	return &node
@@ -518,7 +533,10 @@ func (ce *CompilationEngine) compileLetStatement() *Node {
 	vmIndex := ce.cst.GetIndexOf(vmName)
 	ce.advance()
 
+	isArray := false
 	if ce.currentToken().TypeOf == tokenizer.TokenTypeSymbol && ce.currentToken().Value == "[" { // ( '[' expression ']' )?...
+		isArray = true
+
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '['
 		ce.advance()
 
@@ -530,6 +548,9 @@ func (ce *CompilationEngine) compileLetStatement() *Node {
 		ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"]"})
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ']'
 		ce.advance()
+
+		ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
+		ce.vmw.WriteArithmetic("add")                                   // vm write: add
 	}
 
 	ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"="})
@@ -545,10 +566,17 @@ func (ce *CompilationEngine) compileLetStatement() *Node {
 	node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ';'
 	ce.advance()
 
-	ce.vmw.WritePop(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: pop segment n
+	if isArray {
+		ce.vmw.WritePop(writer.SegmentTemp, 0)    // vm write: pop temp 0
+		ce.vmw.WritePop(writer.SegmentPointer, 1) // vm write: pop pointer 1
+		ce.vmw.WritePush(writer.SegmentTemp, 0)   // vm write: push temp 0
+		ce.vmw.WritePop(writer.SegmentThat, 0)    // vm write: pop that 0
+	} else {
+		ce.vmw.WritePop(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: pop segment n
+	}
 
 	if ce.debug {
-		fmt.Println("compileLetStatement()", ce.cst)
+		fmt.Println("CompilationEngine.compileLetStatement()", ce.cst)
 	}
 
 	return &node
@@ -579,7 +607,7 @@ func (ce *CompilationEngine) compileReturnStatement() *Node {
 	ce.vmw.WriteReturn() // vm write: return
 
 	if ce.debug {
-		fmt.Println("compileReturnStatement()", ce.cst)
+		fmt.Println("CompilationEngine.compileReturnStatement()", ce.cst)
 	}
 
 	return &node
@@ -634,7 +662,7 @@ func (ce *CompilationEngine) compileWhileStatement() *Node {
 	ce.vmw.WriteLabel(l2) // vm write: label L2
 
 	if ce.debug {
-		fmt.Println("compileWhileStatement()", ce.cst)
+		fmt.Println("CompilationEngine.compileWhileStatement()", ce.cst)
 	}
 
 	return &node
@@ -669,7 +697,7 @@ func (ce *CompilationEngine) compileExpressionList() (*Node, int) {
 	}
 
 	if ce.debug {
-		fmt.Println("compileExpressionList()", ce.cst)
+		fmt.Println("CompilationEngine.compileExpressionList()", ce.cst)
 	}
 
 	return &node, numArgs
@@ -702,7 +730,7 @@ func (ce *CompilationEngine) compileExpression() *Node {
 	}
 
 	if ce.debug {
-		fmt.Println("compileExpression()", ce.cst)
+		fmt.Println("CompilationEngine.compileExpression()", ce.cst)
 	}
 
 	return &node
@@ -723,6 +751,12 @@ func (ce *CompilationEngine) compileTerm() *Node {
 		ce.advance()
 	} else if ce.currentToken().TypeOf == tokenizer.TokenTypeStringConstant {
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // stringConstant
+		ce.vmw.WritePush(writer.SegmentConstant, len(ce.currentToken().Value))                                          // vm write: push constant n
+		ce.vmw.WriteCall("String.new", 1)                                                                               // vm write: call String.new 1
+		for _, char := range ce.currentToken().Value {
+			ce.vmw.WritePush(writer.SegmentConstant, int(char)) // vm write: push constant n
+			ce.vmw.WriteCall("String.appendChar", 2)            // vm write: call String.appendChar 2
+		}
 		ce.advance()
 	} else if ce.currentToken().IsKeywordConstant() {
 		if ce.currentToken().Value == "true" {
@@ -759,18 +793,27 @@ func (ce *CompilationEngine) compileTerm() *Node {
 			ce.vmw.WriteCall(vmName, numArgs) // vm write: call className.subroutineName n
 		} else if ce.nextToken().TypeOf == tokenizer.TokenTypeSymbol && ce.nextToken().Value == "." { // subroutineCall: (className | varName) '.' subroutineName '(' expressionList ')'...
 			node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // (className | varName)
-			vmName := ce.currentToken().Value
+			classOrVarName := ce.currentToken().Value
+			classOrVarType := ce.cst.GetTypeOf(classOrVarName)
+			vmClassName := classOrVarName
+			vmSubroutineName := ""
+			vmNumArgs := 0
 			ce.advance()
 
 			ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"."})
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '.'
-			vmName += "."
 			ce.advance()
 
 			ce.validateCurrentToken(tokenizer.TokenTypeIdentifier, []string{})
 			node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // subroutineName
-			vmName += ce.currentToken().Value
+			vmSubroutineName = ce.currentToken().Value
 			ce.advance()
+
+			if classOrVarType != "" {
+				ce.vmw.WritePush(writer.Segment(ce.cst.GetKindOf(vmClassName)), ce.cst.GetIndexOf(vmClassName)) // vm write: push segment n
+				vmNumArgs++
+				vmClassName = classOrVarType
+			}
 
 			ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"("})
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '('
@@ -785,9 +828,12 @@ func (ce *CompilationEngine) compileTerm() *Node {
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ')'
 			ce.advance()
 
-			ce.vmw.WriteCall(vmName, numArgs) // vm write: call className.subroutineName n
+			ce.vmw.WriteCall(fmt.Sprintf("%s.%s", vmClassName, vmSubroutineName), numArgs) // vm write: call className.subroutineName n
 		} else if ce.nextToken().TypeOf == tokenizer.TokenTypeSymbol && ce.nextToken().Value == "[" { // varName '[' expression ']'...
 			node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // varName
+			vmName := ce.currentToken().Value
+			vmSegment := ce.cst.GetKindOf(vmName)
+			vmIndex := ce.cst.GetIndexOf(vmName)
 			ce.advance()
 
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // [
@@ -801,6 +847,11 @@ func (ce *CompilationEngine) compileTerm() *Node {
 			ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"]"})
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ']'
 			ce.advance()
+
+			ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
+			ce.vmw.WriteArithmetic("add")                                   // vm write: add
+			ce.vmw.WritePop(writer.SegmentPointer, 1)                       // vm write: pop pointer 1
+			ce.vmw.WritePush(writer.SegmentThat, 0)                         // vm write: push that 0
 		} else { // varName...
 			node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // varName
 			vmName := ce.currentToken().Value
@@ -841,7 +892,7 @@ func (ce *CompilationEngine) compileTerm() *Node {
 	}
 
 	if ce.debug {
-		fmt.Println("compileTerm()", ce.cst)
+		fmt.Println("CompilationEngine.compileTerm()", ce.cst)
 	}
 
 	return &node

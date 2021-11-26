@@ -113,5 +113,5 @@ func (cst *CombinedSymbolTable) GetIndexOf(identifierName string) int {
 }
 
 func (cst *CombinedSymbolTable) String() string {
-	return fmt.Sprintf("\nC: %+v\nS: %+v\n", cst.classScopeSymbolTable, cst.subroutineScopeSymbolTable)
+	return fmt.Sprintf(" | C: %+v | S: %+v", cst.classScopeSymbolTable, cst.subroutineScopeSymbolTable)
 }
