@@ -12,6 +12,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	SubroutineTypeConstructor = "constructor"
+	SubroutineTypeFunction    = "function"
+	SubroutineTypeMethod      = "method"
+)
+
 type CompilationEngine struct {
 	tokens      []tokenizer.Token
 	debug       bool
@@ -149,7 +155,8 @@ func (ce *CompilationEngine) compileSubroutineDec() *Node {
 	node := Node{Name: "subroutineDec", Value: "", Children: []Node{}}
 
 	childNode := Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}} // ('constructor' | 'function' | 'method')
-	if ce.currentToken().Value == "method" {
+	subroutineType := ce.currentToken().Value
+	if subroutineType == SubroutineTypeMethod {
 		ce.cst.Define("this", ce.className, symbols.SymbolKindArgument) // add to combined symbol table ("this" is always the first argument of methods only)
 	}
 	node.AddChild(childNode)
@@ -178,7 +185,7 @@ func (ce *CompilationEngine) compileSubroutineDec() *Node {
 	node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ')'
 	ce.advance()
 
-	subroutineBody := ce.compileSubroutineBody(subroutineName)
+	subroutineBody := ce.compileSubroutineBody(subroutineName, subroutineType)
 	if subroutineBody != nil {
 		node.AddChild(*subroutineBody) // subroutineBody
 	}
@@ -236,7 +243,7 @@ func (ce *CompilationEngine) addParameter(node *Node) *Node {
 	return node
 }
 
-func (ce *CompilationEngine) compileSubroutineBody(subroutineName string) *Node {
+func (ce *CompilationEngine) compileSubroutineBody(subroutineName, subroutineType string) *Node {
 	// Grammar: '{' varDec* statements '}'
 
 	node := Node{Name: "subroutineBody", Value: "", Children: []Node{}}
@@ -257,6 +264,17 @@ func (ce *CompilationEngine) compileSubroutineBody(subroutineName string) *Node 
 	}
 
 	ce.vmw.WriteFunction(fmt.Sprintf("%s.%s", ce.className, subroutineName), ce.cst.GetVarCount(symbols.SymbolKindVar)) // vm write: function thisClassName.subroutineName n
+
+	if subroutineType == SubroutineTypeConstructor {
+		ce.vmw.WritePush(writer.SegmentConstant, ce.cst.GetVarCount(symbols.SymbolKindField)) // vm write: push constant n
+		ce.vmw.WriteCall("Memory.alloc", 1)                                                   // vm write: call Memory.alloc 1
+		ce.vmw.WritePop(writer.SegmentPointer, 0)                                             // vm write: pop pointer 0
+	}
+
+	if subroutineType == SubroutineTypeMethod {
+		ce.vmw.WritePush(writer.SegmentArgument, 0) // vm write: push argument 0
+		ce.vmw.WritePop(writer.SegmentPointer, 0)   // vm write: pop pointer 0
+	}
 
 	statements := ce.compileStatements()
 	if statements != nil {
@@ -405,7 +423,13 @@ func (ce *CompilationEngine) compileDoStatement() *Node {
 	}
 
 	if classOrVarType != "" {
-		ce.vmw.WritePush(writer.Segment(ce.cst.GetKindOf(vmClassName)), ce.cst.GetIndexOf(vmClassName)) // vm write: push segment n
+		kind := ce.cst.GetKindOf(vmClassName)
+		index := ce.cst.GetIndexOf(vmClassName)
+		if kind == symbols.SymbolKindField {
+			ce.vmw.WritePush(writer.SegmentThis, index) // vm write: push this n
+		} else {
+			ce.vmw.WritePush(writer.Segment(kind), index) // vm write: push segment n
+		}
 		vmNumArgs++
 		vmClassName = classOrVarType
 	}
@@ -572,7 +596,11 @@ func (ce *CompilationEngine) compileLetStatement() *Node {
 		ce.vmw.WritePush(writer.SegmentTemp, 0)   // vm write: push temp 0
 		ce.vmw.WritePop(writer.SegmentThat, 0)    // vm write: pop that 0
 	} else {
-		ce.vmw.WritePop(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: pop segment n
+		if vmSegment == symbols.SymbolKindField {
+			ce.vmw.WritePop(writer.SegmentThis, vmIndex) // vm write: pop this n
+		} else {
+			ce.vmw.WritePop(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: pop segment n
+		}
 	}
 
 	if ce.debug {
@@ -859,7 +887,11 @@ func (ce *CompilationEngine) compileTerm() *Node {
 			vmIndex := ce.cst.GetIndexOf(vmName)
 			ce.advance()
 
-			ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
+			if vmSegment == symbols.SymbolKindField {
+				ce.vmw.WritePush(writer.SegmentThis, vmIndex) // vm write: push this n
+			} else {
+				ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
+			}
 		}
 	} else if ce.currentToken().TypeOf == tokenizer.TokenTypeSymbol && ce.currentToken().Value == "(" { // '(' expression ')'...
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '('

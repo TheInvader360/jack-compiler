@@ -17,7 +17,7 @@ func (vmw *VMWriter) WritePush(segment Segment, index int) {
 	line := fmt.Sprintf("push %s %d", segment, index)
 	vmw.Code += line + "\n"
 	if vmw.debug {
-		fmt.Println("WritePush()", line)
+		fmt.Println("VMWriter.WritePush()", line)
 	}
 }
 
