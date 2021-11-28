@@ -113,3 +113,12 @@ func (vmw *VMWriter) WriteReturn() {
 		fmt.Println("VMWriter.WriteReturn()", line)
 	}
 }
+
+// WriteComment - writes a vm comment
+func (vmw *VMWriter) WriteComment(comment string) {
+	line := fmt.Sprintf("// %s", comment)
+	vmw.Code += line + "\n"
+	if vmw.debug {
+		fmt.Println("VMWriter.WriteComment()", line)
+	}
+}

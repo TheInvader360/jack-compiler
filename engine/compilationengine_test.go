@@ -10,7 +10,7 @@ import (
 
 func TestNewCompilationEngine(t *testing.T) {
 	tokens := []tokenizer.Token{}
-	engine := NewCompilationEngine(tokens, false)
+	engine := NewCompilationEngine(tokens, false, false)
 	assert.Equal(t, tokens, engine.tokens)
 	assert.Equal(t, 0, engine.tokenIndex)
 }
@@ -31,7 +31,7 @@ func TestCompileClassXML(t *testing.T) {
 		{tokens: tokenizer.SquareExpressionless_SquareGame_Tokens(t), expectedXML: common.SquareExpressionless_SquareGame_XML},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens, false)
+		engine := NewCompilationEngine(tc.tokens, false, false)
 		tree, _, _ := engine.CompileClass()
 		assert.Equal(t, tc.expectedXML, tree)
 	}
@@ -47,7 +47,7 @@ func TestCompileClassAsExtendedXML(t *testing.T) {
 		//TODO: more test cases
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens, false)
+		engine := NewCompilationEngine(tc.tokens, false, false)
 		_, tree, _ := engine.CompileClass()
 		assert.Equal(t, tc.expectedXML, tree)
 	}
@@ -70,12 +70,12 @@ func TestCompileClassVM(t *testing.T) {
 		{jack: common.Pong_Ball_Jack, expectedVM: common.Pong_Ball_VM},
 		{jack: common.Pong_Bat_Jack, expectedVM: common.Pong_Bat_VM},
 		{jack: common.Pong_Main_Jack, expectedVM: common.Pong_Main_VM},
-		//TODO: {jack: common.Pong_PongGame_Jack, expectedVM: common.Pong_PongGame_VM},
-		//TODO: {jack: common.ComplexArrays_Main_Jack, expectedVM: common.ComplexArrays_Main_VM},
+		{jack: common.Pong_PongGame_Jack, expectedVM: common.Pong_PongGame_VM},
+		{jack: common.ComplexArrays_Main_Jack, expectedVM: common.ComplexArrays_Main_VM},
 	}
 	for _, tc := range tests {
 		tokens := tokenizer.Tokenize([]byte(tc.jack))
-		engine := NewCompilationEngine(tokens, false)
+		engine := NewCompilationEngine(tokens, false, false)
 		_, _, vmCode := engine.CompileClass()
 		assert.Equal(t, tc.expectedVM, vmCode)
 	}
@@ -111,7 +111,7 @@ func TestCompileVarDec(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens, false)
+		engine := NewCompilationEngine(tc.tokens, false, false)
 		tree := engine.compileVarDec()
 		assert.Equal(t, tc.expectedTree, tree)
 	}
@@ -142,7 +142,7 @@ func TestCompileExpression(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens, false)
+		engine := NewCompilationEngine(tc.tokens, false, false)
 		tree := engine.compileExpression()
 		assert.Equal(t, tc.expectedTree, tree)
 	}
@@ -307,7 +307,7 @@ func TestCompileTerm(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens, false)
+		engine := NewCompilationEngine(tc.tokens, false, false)
 		tree := engine.compileTerm()
 		assert.Equal(t, tc.expectedTree, tree)
 	}

@@ -21,6 +21,7 @@ const (
 type CompilationEngine struct {
 	tokens      []tokenizer.Token
 	debug       bool
+	vmComments  bool
 	tokenIndex  int
 	cst         *symbols.CombinedSymbolTable
 	vmw         *writer.VMWriter
@@ -29,10 +30,11 @@ type CompilationEngine struct {
 }
 
 // NewCompilationEngine - creates a compilation engine
-func NewCompilationEngine(tokens []tokenizer.Token, debug bool) *CompilationEngine {
+func NewCompilationEngine(tokens []tokenizer.Token, debug, vmComments bool) *CompilationEngine {
 	ce := CompilationEngine{
 		tokens:      tokens,
 		debug:       debug,
+		vmComments:  vmComments,
 		cst:         symbols.NewCombinedSymbolTable(),
 		vmw:         writer.NewVMWriter(debug),
 		labelCounts: map[string]int{},
@@ -59,6 +61,9 @@ func (ce *CompilationEngine) CompileClass() (string, string, string) {
 
 	node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // className
 	ce.className = ce.currentToken().Value
+	if ce.vmComments {
+		ce.vmw.WriteComment(fmt.Sprintf("Class: %s", ce.className))
+	}
 	ce.advance()
 
 	ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"{"})
@@ -246,6 +251,10 @@ func (ce *CompilationEngine) addParameter(node *Node) *Node {
 func (ce *CompilationEngine) compileSubroutineBody(subroutineName, subroutineType string) *Node {
 	// Grammar: '{' varDec* statements '}'
 
+	if ce.vmComments {
+		ce.vmw.WriteComment(fmt.Sprintf("SubroutineBody: %s", subroutineName))
+	}
+
 	node := Node{Name: "subroutineBody", Value: "", Children: []Node{}}
 
 	ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"{"})
@@ -391,6 +400,10 @@ func (ce *CompilationEngine) compileDoStatement() *Node {
 	// Grammar: 'do' subroutineCall ';'
 	// Where subroutineCall: subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName '(' expressionList ')'
 
+	if ce.vmComments {
+		ce.vmw.WriteComment("Do")
+	}
+
 	node := Node{Name: "doStatement", Value: "", Children: []Node{}}
 
 	ce.validateCurrentToken(tokenizer.TokenTypeKeyword, []string{"do"})
@@ -465,6 +478,10 @@ func (ce *CompilationEngine) compileDoStatement() *Node {
 func (ce *CompilationEngine) compileIfStatement() *Node {
 	// Grammar: 'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )?
 
+	if ce.vmComments {
+		ce.vmw.WriteComment("If")
+	}
+
 	node := Node{Name: "ifStatement", Value: "", Children: []Node{}}
 
 	l1 := fmt.Sprintf("IF_TRUE%d", ce.labelCounts["IF_TRUE"])
@@ -516,6 +533,10 @@ func (ce *CompilationEngine) compileIfStatement() *Node {
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // 'else'
 		ce.advance()
 
+		if ce.vmComments {
+			ce.vmw.WriteComment("Else")
+		}
+
 		ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"{"})
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '{'
 		ce.advance()
@@ -543,6 +564,10 @@ func (ce *CompilationEngine) compileIfStatement() *Node {
 
 func (ce *CompilationEngine) compileLetStatement() *Node {
 	// Grammar: 'let' varName ( '[' expression ']' )? '=' expression ';'
+
+	if ce.vmComments {
+		ce.vmw.WriteComment("Let")
+	}
 
 	node := Node{Name: "letStatement", Value: "", Children: []Node{}}
 
@@ -613,6 +638,10 @@ func (ce *CompilationEngine) compileLetStatement() *Node {
 func (ce *CompilationEngine) compileReturnStatement() *Node {
 	// Grammar: 'return' expression? ';'
 
+	if ce.vmComments {
+		ce.vmw.WriteComment("Return")
+	}
+
 	node := Node{Name: "returnStatement", Value: "", Children: []Node{}}
 
 	ce.validateCurrentToken(tokenizer.TokenTypeKeyword, []string{"return"})
@@ -643,6 +672,10 @@ func (ce *CompilationEngine) compileReturnStatement() *Node {
 
 func (ce *CompilationEngine) compileWhileStatement() *Node {
 	// Grammar: 'while' '(' expression ')' '{' statements '}'
+
+	if ce.vmComments {
+		ce.vmw.WriteComment("While")
+	}
 
 	node := Node{Name: "whileStatement", Value: "", Children: []Node{}}
 
@@ -820,6 +853,7 @@ func (ce *CompilationEngine) compileTerm() *Node {
 
 			ce.vmw.WriteCall(vmName, numArgs) // vm write: call className.subroutineName n
 		} else if ce.nextToken().TypeOf == tokenizer.TokenTypeSymbol && ce.nextToken().Value == "." { // subroutineCall: (className | varName) '.' subroutineName '(' expressionList ')'...
+
 			node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // (className | varName)
 			classOrVarName := ce.currentToken().Value
 			classOrVarType := ce.cst.GetTypeOf(classOrVarName)
@@ -838,7 +872,13 @@ func (ce *CompilationEngine) compileTerm() *Node {
 			ce.advance()
 
 			if classOrVarType != "" {
-				ce.vmw.WritePush(writer.Segment(ce.cst.GetKindOf(vmClassName)), ce.cst.GetIndexOf(vmClassName)) // vm write: push segment n
+				kind := ce.cst.GetKindOf(vmClassName)
+				index := ce.cst.GetIndexOf(vmClassName)
+				if kind == symbols.SymbolKindField {
+					ce.vmw.WritePush(writer.SegmentThis, index) // vm write: push this n
+				} else {
+					ce.vmw.WritePush(writer.Segment(kind), index) // vm write: push segment n
+				}
 				vmNumArgs++
 				vmClassName = classOrVarType
 			}
@@ -847,16 +887,17 @@ func (ce *CompilationEngine) compileTerm() *Node {
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // '('
 			ce.advance()
 
-			expressionList, numArgs := ce.compileExpressionList()
+			expressionList, numExpressionListArgs := ce.compileExpressionList()
 			if expressionList != nil {
 				node.AddChild(*expressionList) // expressionList
 			}
+			vmNumArgs += numExpressionListArgs
 
 			ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{")"})
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ')'
 			ce.advance()
 
-			ce.vmw.WriteCall(fmt.Sprintf("%s.%s", vmClassName, vmSubroutineName), numArgs) // vm write: call className.subroutineName n
+			ce.vmw.WriteCall(fmt.Sprintf("%s.%s", vmClassName, vmSubroutineName), vmNumArgs) // vm write: call className.subroutineName n
 		} else if ce.nextToken().TypeOf == tokenizer.TokenTypeSymbol && ce.nextToken().Value == "[" { // varName '[' expression ']'...
 			node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // varName
 			vmName := ce.currentToken().Value

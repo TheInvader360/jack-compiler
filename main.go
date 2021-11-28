@@ -18,6 +18,7 @@ import (
 func main() {
 	path := flag.String("path", "examples/HelloWorld", "jack source path")
 	debug := flag.Bool("debug", false, "enable debug terminal output")
+	vmComments := flag.Bool("comments", false, "enable comments in vm output")
 	flag.Parse()
 
 	fileInfo, err := os.Stat(*path)
@@ -46,7 +47,7 @@ func main() {
 			tokens := tokenizer.Tokenize(jackData)
 			writeFile(tokenizer.AsXML(tokens), strings.Replace(file, ".jack", "T.xml", 1))
 
-			engine := engine.NewCompilationEngine(tokens, *debug)
+			engine := engine.NewCompilationEngine(tokens, *debug, *vmComments)
 			tree, extendedTree, vmCode := engine.CompileClass()
 			writeFile(tree, strings.Replace(file, ".jack", ".xml", 1))
 			writeFile(extendedTree, strings.Replace(file, ".jack", "S.xml", 1))

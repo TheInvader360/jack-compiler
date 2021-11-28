@@ -74,3 +74,9 @@ func TestWriteReturn(t *testing.T) {
 	vmw.WriteReturn()
 	assert.Equal(t, "return\n", vmw.Code)
 }
+
+func TestWriteComment(t *testing.T) {
+	vmw := NewVMWriter(true)
+	vmw.WriteComment("Testing...")
+	assert.Equal(t, "// Testing...\n", vmw.Code)
+}

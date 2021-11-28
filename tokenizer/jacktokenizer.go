@@ -34,10 +34,10 @@ func Tokenize(jackSource []byte) []Token {
 		switch {
 		case keywordRegexp.MatchString(tokenValue):
 			tokens = append(tokens, Token{TypeOf: TokenTypeKeyword, Value: tokenValue})
-		case integerConstantRegexp.MatchString(tokenValue):
-			tokens = append(tokens, Token{TypeOf: TokenTypeIntegerConstant, Value: tokenValue})
 		case stringConstantRegexp.MatchString(tokenValue):
 			tokens = append(tokens, Token{TypeOf: TokenTypeStringConstant, Value: strings.ReplaceAll(tokenValue, "\"", "")})
+		case integerConstantRegexp.MatchString(tokenValue):
+			tokens = append(tokens, Token{TypeOf: TokenTypeIntegerConstant, Value: tokenValue})
 		case identifierRegexp.MatchString(tokenValue):
 			tokens = append(tokens, Token{TypeOf: TokenTypeIdentifier, Value: tokenValue})
 		case symbolRegexp.MatchString(tokenValue):
