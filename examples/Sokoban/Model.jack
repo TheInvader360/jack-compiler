@@ -1,0 +1,71 @@
+class Model {
+    field LevelManager levelManager;
+    field Board board;
+    field State state;
+    field int tickAccumulator;
+    field boolean screenDirty;
+
+    constructor Model new() {
+        let levelManager = LevelManager.new();
+        let state = State.StatePlaying();
+        let tickAccumulator = 0;
+        let screenDirty = false;
+        return this;
+    }
+
+    method void update() {
+        let tickAccumulator = tickAccumulator + 1;
+        if (tickAccumulator > 20) {
+            let tickAccumulator = 0;
+        }
+        if (screenDirty) {
+            let screenDirty = false;
+        }
+
+        return;
+    }
+
+    method LevelManager getLevelManager() {
+        return levelManager;
+    }
+
+    method Board getBoard() {
+        return board;
+    }
+
+    method State getState() {
+        return state;
+    }
+
+    method int getTickAccumulator() {
+        return tickAccumulator;
+    }
+
+    method boolean isScreenDirty() {
+        return screenDirty;
+    }
+
+    method void setBoard(Board aBoard) {
+        if (~(board = null)) {
+            do board.dispose();
+        }
+        let board = aBoard;
+
+        return;
+    }
+
+    method void setState(State aState) {
+        let state = aState;
+        let screenDirty = true; // forces a full screen refresh on state change
+
+        return;
+    }
+
+    method void dispose() {
+        do levelManager.dispose();
+        do board.dispose();
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}

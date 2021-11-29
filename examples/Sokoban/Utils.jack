@@ -1,0 +1,10 @@
+class Utils {
+    // the modulo operation returns the remainder of a division e.g. mod(5, 2) would return 1, because 5 divided by 2 has a quotient of 2 and a remainder of 1... mod(a,b) = a-b*(a/b)
+    function int mod(int dividend, int divisor) {
+        var int quotient;
+
+        let quotient = dividend / divisor;
+
+        return (dividend - (quotient * divisor));
+    }
+}

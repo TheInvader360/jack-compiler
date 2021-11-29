@@ -1,0 +1,28 @@
+class Direction {
+    static int U, D, L, R;
+
+    function void init() {
+        let U = 131;
+        let D = 133;
+        let L = 130;
+        let R = 132;
+
+        return;
+    }
+
+    function int U() {
+        return U;
+    }
+
+    function int D() {
+        return D;
+    }
+
+    function int L() {
+        return L;
+    }
+
+    function int R() {
+        return R;
+    }
+}

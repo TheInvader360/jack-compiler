@@ -1,0 +1,425 @@
+function Controller.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push constant 0
+not
+pop this 1
+push constant 0
+pop this 2
+push pointer 0
+return
+function Controller.startNewGame 1
+push argument 0
+pop pointer 0
+push this 0
+call Model.getLevelManager 1
+pop local 0
+push local 0
+call LevelManager.reset 1
+pop temp 0
+push pointer 0
+call Controller.tryStartNextLevel 1
+pop temp 0
+push constant 0
+return
+function Controller.handleInput 1
+push argument 0
+pop pointer 0
+call Keyboard.keyPressed 0
+pop local 0
+push local 0
+push constant 0
+eq
+not
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+call Direction.U 0
+eq
+push local 0
+call Direction.D 0
+eq
+or
+push local 0
+call Direction.L 0
+eq
+or
+push local 0
+call Direction.R 0
+eq
+or
+push local 0
+push constant 32
+eq
+or
+push local 0
+push constant 82
+eq
+or
+push local 0
+push constant 83
+eq
+or
+push local 0
+push constant 140
+eq
+or
+not
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 0
+pop this 2
+push constant 0
+return
+label IF_FALSE1
+push local 0
+push constant 140
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+pop this 1
+label IF_FALSE2
+push this 2
+push local 0
+eq
+not
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push this 0
+call Model.getState 1
+call State.StateGameComplete 0
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 0
+push constant 32
+eq
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push pointer 0
+call Controller.startNewGame 1
+pop temp 0
+label IF_FALSE5
+label IF_FALSE4
+push this 0
+call Model.getState 1
+call State.StateLevelComplete 0
+eq
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push local 0
+push constant 32
+eq
+if-goto IF_TRUE7
+goto IF_FALSE7
+label IF_TRUE7
+push pointer 0
+call Controller.tryStartNextLevel 1
+pop temp 0
+label IF_FALSE7
+label IF_FALSE6
+push this 0
+call Model.getState 1
+call State.StatePlaying 0
+eq
+if-goto IF_TRUE8
+goto IF_FALSE8
+label IF_TRUE8
+push local 0
+call Direction.U 0
+eq
+push local 0
+call Direction.D 0
+eq
+or
+push local 0
+call Direction.L 0
+eq
+or
+push local 0
+call Direction.R 0
+eq
+or
+if-goto IF_TRUE9
+goto IF_FALSE9
+label IF_TRUE9
+push pointer 0
+push local 0
+call Controller.tryMovePlayer 2
+pop temp 0
+label IF_FALSE9
+push local 0
+push constant 82
+eq
+if-goto IF_TRUE10
+goto IF_FALSE10
+label IF_TRUE10
+push pointer 0
+call Controller.restartLevel 1
+pop temp 0
+label IF_FALSE10
+push local 0
+push constant 83
+eq
+if-goto IF_TRUE11
+goto IF_FALSE11
+label IF_TRUE11
+label IF_FALSE11
+label IF_FALSE8
+label IF_FALSE3
+push local 0
+pop this 2
+goto IF_END0
+label IF_FALSE0
+push constant 0
+pop this 2
+label IF_END0
+push constant 0
+return
+function Controller.tryMovePlayer 10
+push argument 0
+pop pointer 0
+push this 0
+call Model.getBoard 1
+pop local 0
+push local 0
+call Board.getPlayer 1
+pop local 1
+push local 1
+call Player.getX 1
+pop local 2
+push local 1
+call Player.getY 1
+pop local 3
+push local 2
+pop local 4
+push local 3
+pop local 5
+push local 4
+pop local 6
+push local 5
+pop local 7
+push argument 1
+call Direction.U 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 5
+push constant 1
+sub
+pop local 5
+push local 7
+push constant 2
+sub
+pop local 7
+label IF_FALSE0
+push argument 1
+call Direction.D 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 5
+push constant 1
+add
+pop local 5
+push local 7
+push constant 2
+add
+pop local 7
+label IF_FALSE1
+push argument 1
+call Direction.L 0
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 4
+push constant 1
+sub
+pop local 4
+push local 6
+push constant 2
+sub
+pop local 6
+label IF_FALSE2
+push argument 1
+call Direction.R 0
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push local 4
+push constant 1
+add
+pop local 4
+push local 6
+push constant 2
+add
+pop local 6
+label IF_FALSE3
+push local 0
+push local 4
+push local 5
+call Board.getCell 3
+pop local 8
+push local 8
+call Cell.getTypeOf 1
+call CellType.CellTypeWall 0
+eq
+not
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 8
+call Cell.getHasBox 1
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push local 0
+push local 6
+push local 7
+call Board.getCell 3
+pop local 9
+push local 9
+call Cell.getTypeOf 1
+call CellType.CellTypeWall 0
+eq
+not
+push local 9
+call Cell.getHasBox 1
+not
+and
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push local 8
+push constant 0
+call Cell.setHasBox 2
+pop temp 0
+push local 9
+push constant 0
+not
+call Cell.setHasBox 2
+pop temp 0
+push local 1
+push local 4
+push local 5
+call Player.moveTo 3
+pop temp 0
+push local 0
+call Board.isComplete 1
+if-goto IF_TRUE7
+goto IF_FALSE7
+label IF_TRUE7
+push this 0
+call State.StateLevelComplete 0
+call Model.setState 2
+pop temp 0
+label IF_FALSE7
+label IF_FALSE6
+goto IF_END5
+label IF_FALSE5
+push local 1
+push local 4
+push local 5
+call Player.moveTo 3
+pop temp 0
+label IF_END5
+label IF_FALSE4
+push constant 0
+return
+function Controller.tryStartNextLevel 3
+push argument 0
+pop pointer 0
+push this 0
+call Model.getLevelManager 1
+pop local 0
+push local 0
+call LevelManager.hasNextLevel 1
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+call LevelManager.progressToNextLevel 1
+pop temp 0
+push local 0
+call LevelManager.getCurrentLevel 1
+pop local 1
+push local 1
+call Level.getWidth 1
+push local 1
+call Level.getHeight 1
+push local 1
+call Level.getMapData 1
+call Board.new 3
+pop local 2
+push this 0
+push local 2
+call Model.setBoard 2
+pop temp 0
+push this 0
+call State.StatePlaying 0
+call Model.setState 2
+pop temp 0
+goto IF_END0
+label IF_FALSE0
+push this 0
+call State.StateGameComplete 0
+call Model.setState 2
+pop temp 0
+label IF_END0
+push constant 0
+return
+function Controller.restartLevel 3
+push argument 0
+pop pointer 0
+push this 0
+call Model.getLevelManager 1
+pop local 0
+push local 0
+call LevelManager.getCurrentLevel 1
+pop local 1
+push local 1
+call Level.getWidth 1
+push local 1
+call Level.getHeight 1
+push local 1
+call Level.getMapData 1
+call Board.new 3
+pop local 2
+push this 0
+push local 2
+call Model.setBoard 2
+pop temp 0
+push this 0
+call State.StatePlaying 0
+call Model.setState 2
+pop temp 0
+push constant 0
+return
+function Controller.isRunning 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Controller.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return

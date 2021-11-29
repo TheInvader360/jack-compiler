@@ -1,0 +1,323 @@
+function Board.new 3
+push constant 4
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push this 0
+push this 1
+call Math.multiply 2
+call Array.new 1
+pop this 2
+push constant 0
+pop local 0
+push constant 0
+pop local 1
+label WHILE_EXP0
+push local 1
+push this 1
+lt
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+push this 0
+lt
+not
+if-goto WHILE_END1
+push argument 2
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+call String.charAt 2
+pop local 2
+push local 2
+push constant 64
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeNone 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push local 1
+call Player.new 2
+pop this 3
+label IF_FALSE0
+push local 2
+push constant 36
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeNone 0
+push constant 0
+not
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE1
+push local 2
+push constant 46
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeGoal 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE2
+push local 2
+push constant 35
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeWall 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE3
+push local 2
+push constant 43
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeGoal 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push local 1
+call Player.new 2
+pop this 3
+label IF_FALSE4
+push local 2
+push constant 42
+eq
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeGoal 0
+push constant 0
+not
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE5
+push local 2
+push constant 32
+eq
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeNone 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE6
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP1
+label WHILE_END1
+push local 1
+push constant 1
+add
+pop local 1
+push constant 0
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push pointer 0
+return
+function Board.getCell 0
+push argument 0
+pop pointer 0
+push argument 2
+push this 0
+call Math.multiply 2
+push argument 1
+add
+push this 2
+add
+pop pointer 1
+push that 0
+return
+function Board.isComplete 3
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+push this 0
+push this 1
+call Math.multiply 2
+pop local 1
+label WHILE_EXP0
+push local 0
+push local 1
+lt
+not
+if-goto WHILE_END0
+push local 0
+push this 2
+add
+pop pointer 1
+push that 0
+pop local 2
+push local 2
+call Cell.getTypeOf 1
+call CellType.CellTypeGoal 0
+eq
+push local 2
+call Cell.getHasBox 1
+not
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+return
+label IF_FALSE0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+not
+return
+function Board.getWidth 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Board.getHeight 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Board.getPlayer 0
+push argument 0
+pop pointer 0
+push this 3
+return
+function Board.dispose 3
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+push this 0
+push this 1
+call Math.multiply 2
+pop local 1
+label WHILE_EXP0
+push local 0
+push local 1
+lt
+not
+if-goto WHILE_END0
+push local 0
+push this 2
+add
+pop pointer 1
+push that 0
+pop local 2
+push local 2
+call Cell.dispose 1
+pop temp 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push this 2
+call Array.dispose 1
+pop temp 0
+push this 3
+call Player.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return

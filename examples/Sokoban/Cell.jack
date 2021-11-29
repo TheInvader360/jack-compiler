@@ -1,0 +1,31 @@
+class Cell {
+    field CellType typeOf;
+    field boolean hasBox;
+
+    constructor Cell new(CellType aTypeOf, boolean aHasBox) {
+        let typeOf = aTypeOf;
+        let hasBox = aHasBox;
+
+        return this;
+    }
+
+    method CellType getTypeOf() {
+        return typeOf;
+    }
+
+    method boolean getHasBox() {
+        return hasBox;
+    }
+
+    method void setHasBox(boolean aHasBox) {
+        let hasBox = aHasBox;
+
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}

@@ -31,7 +31,7 @@ func TestCompileClassXML(t *testing.T) {
 		{tokens: tokenizer.SquareExpressionless_SquareGame_Tokens(t), expectedXML: common.SquareExpressionless_SquareGame_XML},
 	}
 	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens, false, false)
+		engine := NewCompilationEngine(tc.tokens, true, true)
 		tree, _, _ := engine.CompileClass()
 		assert.Equal(t, tc.expectedXML, tree)
 	}
@@ -59,6 +59,7 @@ func TestCompileClassVM(t *testing.T) {
 		expectedVM string
 	}
 	tests := []test{
+		{jack: common.MultiConditionIf_Main_Jack, expectedVM: common.MultiConditionIf_Main_VM},
 		{jack: common.Seven_Main_Jack, expectedVM: common.Seven_Main_VM},
 		{jack: common.SimpleIf_Main_Jack, expectedVM: common.SimpleIf_Main_VM},
 		{jack: common.SimpleWhile_Main_Jack, expectedVM: common.SimpleWhile_Main_VM},
@@ -72,6 +73,20 @@ func TestCompileClassVM(t *testing.T) {
 		{jack: common.Pong_Main_Jack, expectedVM: common.Pong_Main_VM},
 		{jack: common.Pong_PongGame_Jack, expectedVM: common.Pong_PongGame_VM},
 		{jack: common.ComplexArrays_Main_Jack, expectedVM: common.ComplexArrays_Main_VM},
+		{jack: common.Sokoban_Board_Jack, expectedVM: common.Sokoban_Board_VM},
+		{jack: common.Sokoban_Cell_Jack, expectedVM: common.Sokoban_Cell_VM},
+		{jack: common.Sokoban_CellType_Jack, expectedVM: common.Sokoban_CellType_VM},
+		{jack: common.Sokoban_Controller_Jack, expectedVM: common.Sokoban_Controller_VM},
+		{jack: common.Sokoban_Direction_Jack, expectedVM: common.Sokoban_Direction_VM},
+		{jack: common.Sokoban_Level_Jack, expectedVM: common.Sokoban_Level_VM},
+		{jack: common.Sokoban_LevelManager_Jack, expectedVM: common.Sokoban_LevelManager_VM},
+		{jack: common.Sokoban_Main_Jack, expectedVM: common.Sokoban_Main_VM},
+		{jack: common.Sokoban_Model_Jack, expectedVM: common.Sokoban_Model_VM},
+		{jack: common.Sokoban_Player_Jack, expectedVM: common.Sokoban_Player_VM},
+		{jack: common.Sokoban_Sprites_Jack, expectedVM: common.Sokoban_Sprites_VM},
+		{jack: common.Sokoban_State_Jack, expectedVM: common.Sokoban_State_VM},
+		{jack: common.Sokoban_Utils_Jack, expectedVM: common.Sokoban_Utils_VM},
+		{jack: common.Sokoban_View_Jack, expectedVM: common.Sokoban_View_VM},
 	}
 	for _, tc := range tests {
 		tokens := tokenizer.Tokenize([]byte(tc.jack))

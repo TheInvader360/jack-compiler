@@ -1,0 +1,65 @@
+class LevelManager {
+    field int currentLevelNumber, finalLevelNumber;
+    field Array levels;
+
+    // creates a level manager
+    constructor LevelManager new() {
+        let currentLevelNumber = 0;
+        let finalLevelNumber = 10;
+        let levels = Array.new(finalLevelNumber+1);
+        let levels[0] = Level.new(0, 0, "");
+        let levels[1] = Level.new(8, 8, "  ###     #.#     # #######$ $.##. $@#######$#     #.#     ###  ");
+        let levels[2] = Level.new(9, 9, "#####    #   #    # $@# #### $$# #.#### ###.# ##    .# #   #  # #   #### #####   ");
+        let levels[3] = Level.new(6, 8, " #### ##  # # @$# ##$ #### $ ##.$  ##..*.#######");
+        let levels[4] = Level.new(8, 8, " ####    #@ ###  # $  # ### # ###.# #  ##.$  # ##.   $ #########");
+        let levels[5] = Level.new(8, 7, "  ######  #    ####$$$ ##@ $.. ## $...######  #    #### ");
+        let levels[6] = Level.new(8, 7, "  ##### ###  @# #  $. ###  .$. #### *$ #  #   ##  ##### ");
+        let levels[7] = Level.new(8, 8, "  ####    #..#   ## .##  #  $.# ## $  ###  #$$ ##  @   #########");
+        let levels[8] = Level.new(8, 7, "#########  #   ##@$..$ ## $.* ### $..$ ##  #   #########");
+        let levels[9] = Level.new(9, 7, "######   #    #   # $$$##  #  #..#####  ..$ # # @    # ########");
+        let levels[10] = Level.new(7, 8, "########..$..##..#..## $$$ ##  $  ## $$$ ##  #@ ########");
+
+        return this;
+    }
+
+    // returns the current level number
+    method int getCurrentLevelNumber() {
+        return currentLevelNumber;
+    }
+
+    // returns the final level number
+    method int getFinalLevelNumber() {
+        return finalLevelNumber;
+    }
+
+    // returns the current level
+    method Level getCurrentLevel() {
+        return levels[currentLevelNumber];
+    }
+
+    // returns true if the current level is not the last
+    method boolean hasNextLevel() {
+        return currentLevelNumber < finalLevelNumber;
+    }
+
+    // increments the current level
+    method void progressToNextLevel() {
+        let currentLevelNumber = currentLevelNumber + 1;
+
+        return;
+    }
+
+    // resets the level manager
+    method void reset() {
+        let currentLevelNumber = 0;
+
+        return;
+    }
+
+    method void dispose() {
+        do levels.dispose();
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}

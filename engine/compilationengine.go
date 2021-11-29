@@ -598,8 +598,12 @@ func (ce *CompilationEngine) compileLetStatement() *Node {
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ']'
 		ce.advance()
 
-		ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
-		ce.vmw.WriteArithmetic("add")                                   // vm write: add
+		if vmSegment == symbols.SymbolKindField {
+			ce.vmw.WritePush(writer.SegmentThis, vmIndex) // vm write: push this n
+		} else {
+			ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
+		}
+		ce.vmw.WriteArithmetic("add") // vm write: add
 	}
 
 	ce.validateCurrentToken(tokenizer.TokenTypeSymbol, []string{"="})
@@ -774,19 +778,16 @@ func (ce *CompilationEngine) compileExpression() *Node {
 		node.AddChild(*term) // term
 	}
 
-	ops := []string{}
 	for ce.currentToken().IsOp() { // (op term)*...
 		node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // op
-		ops = append(ops, ce.currentToken().Value)
+		op := ce.currentToken().Value
 		ce.advance()
 
 		term := ce.compileTerm()
 		if term != nil {
 			node.AddChild(*term) // term
 		}
-	}
 
-	for _, op := range ops {
 		ce.vmw.WriteArithmetic(op) // vm write: (arithmetic command)
 	}
 
@@ -917,10 +918,14 @@ func (ce *CompilationEngine) compileTerm() *Node {
 			node.AddChild(Node{Name: string(ce.currentToken().TypeOf), Value: ce.currentToken().Value, Children: []Node{}}) // ']'
 			ce.advance()
 
-			ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
-			ce.vmw.WriteArithmetic("add")                                   // vm write: add
-			ce.vmw.WritePop(writer.SegmentPointer, 1)                       // vm write: pop pointer 1
-			ce.vmw.WritePush(writer.SegmentThat, 0)                         // vm write: push that 0
+			if vmSegment == symbols.SymbolKindField {
+				ce.vmw.WritePush(writer.SegmentThis, vmIndex) // vm write: push this n
+			} else {
+				ce.vmw.WritePush(writer.GetSegment(string(vmSegment)), vmIndex) // vm write: push segment n
+			}
+			ce.vmw.WriteArithmetic("add")             // vm write: add
+			ce.vmw.WritePop(writer.SegmentPointer, 1) // vm write: pop pointer 1
+			ce.vmw.WritePush(writer.SegmentThat, 0)   // vm write: push that 0
 		} else { // varName...
 			node.AddChild(Node{Name: string(tokenizer.TokenTypeIdentifier), Value: ce.currentToken().Value, Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"}) // varName
 			vmName := ce.currentToken().Value

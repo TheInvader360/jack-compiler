@@ -1,0 +1,48 @@
+function Main.main 4
+call CellType.init 0
+pop temp 0
+call Direction.init 0
+pop temp 0
+call State.init 0
+pop temp 0
+call Model.new 0
+pop local 1
+push local 1
+call View.new 1
+pop local 2
+push local 1
+call Controller.new 1
+pop local 3
+push local 3
+call Controller.startNewGame 1
+pop temp 0
+label WHILE_EXP0
+push local 3
+call Controller.isRunning 1
+not
+if-goto WHILE_END0
+push local 3
+call Controller.handleInput 1
+pop temp 0
+push local 2
+call View.draw 1
+pop temp 0
+push local 1
+call Model.update 1
+pop temp 0
+push constant 10
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+push local 1
+call Model.dispose 1
+pop temp 0
+push local 2
+call View.dispose 1
+pop temp 0
+push local 3
+call Controller.dispose 1
+pop temp 0
+push constant 0
+return

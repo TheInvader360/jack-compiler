@@ -1,0 +1,31 @@
+class Main {
+    function void main() {
+        var Direction direction;
+        var Model model;
+        var View view;
+        var Controller controller;
+
+        do CellType.init();
+        do Direction.init();
+        do State.init();
+        
+        let model = Model.new();
+        let view = View.new(model);
+        let controller = Controller.new(model);
+
+        do controller.startNewGame();
+
+        while (controller.isRunning()) {
+            do controller.handleInput();
+            do view.draw();
+            do model.update();
+            do Sys.wait(10);
+        }
+
+        do model.dispose();
+        do view.dispose();
+        do controller.dispose();
+
+        return;
+    }
+}

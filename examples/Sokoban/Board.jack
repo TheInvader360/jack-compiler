@@ -1,0 +1,106 @@
+class Board {
+    field int width, height;
+    field Array cells;
+    field Player player;
+
+    // creates a board (map data encoding: Player "@", Box "$", Goal ".", Wall "#", Goal+Player "+", Goal+Box "*")
+    constructor Board new(int aWidth, int aHeight, String aMapData) {
+        var int x, y;
+        var char cellChar;
+
+        let width = aWidth;
+        let height = aHeight;
+        let cells = Array.new(width * height);
+        let x = 0;
+        let y = 0;
+
+        while (y < height) {
+            while (x < width) {
+                let cellChar = aMapData.charAt((y * width) + x);
+                if (cellChar = 64) { // @ = 64
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeNone(), false);
+                    let player = Player.new(x, y);
+                }
+                if (cellChar = 36) { // $ = 36
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeNone(), true);
+                }
+                if (cellChar = 46) { // . = 46
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeGoal(), false);
+                }
+                if (cellChar = 35) { // # = 35
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeWall(), false);
+                }
+                if (cellChar = 43) { // + = 43
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeGoal(), false);
+                    let player = Player.new(x, y);
+                }
+                if (cellChar = 42) { // * = 42
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeGoal(), true);
+                }
+                if (cellChar = 32) { // (space) = 32
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeNone(), false);
+                }
+                let x = x + 1;
+            }
+            let y = y + 1;
+            let x = 0;
+        }
+
+        return this;
+    }
+
+    // returns the cell at the given location
+    method Cell getCell(int aX, int aY) {
+        return cells[(aY * width) + aX];
+    }
+
+    // returns true if every goal cell on the board has a box
+    method boolean isComplete() {
+        var int i, numCells;
+        var Cell cell;
+
+        let i = 0;
+        let numCells = width * height;
+
+        while (i < numCells) {
+            let cell = cells[i];
+            if ((cell.getTypeOf() = CellType.CellTypeGoal()) & (~(cell.getHasBox()))) { // if cell is of type goal and cell does not have a box...
+                return false;
+            }
+            let i = i + 1;
+        }
+
+        return true;
+    }
+
+    method int getWidth() {
+        return width;
+    }
+
+    method Player getHeight() {
+        return height;
+    }
+
+    method Player getPlayer() {
+        return player;
+    }
+
+    method void dispose() {
+        var int i, numCells;
+        var Cell cell;
+
+        let i = 0;
+        let numCells = width * height;
+
+        while (i < numCells) {
+            let cell = cells[i];
+            do cell.dispose();
+            let i = i + 1;
+        }
+        do cells.dispose();
+        do player.dispose();
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}

@@ -1,0 +1,30 @@
+class Level {
+    field int width, height;
+    field string mapData; // Player "@", Box "$", Goal ".", Wall "#", Goal+Player "+", Goal+Box "*", None " "
+
+    constructor Level new(int aWidth, int aHeight, string aMapData) {
+        let width = aWidth;
+        let height = aHeight;
+        let mapData = aMapData;
+
+        return this;
+    }
+
+    method int getWidth() {
+        return width;
+    }
+
+    method int getHeight() {
+        return height;
+    }
+
+    method string getMapData() {
+        return mapData;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}

@@ -1,0 +1,23 @@
+class State {
+    static int StatePlaying, StateLevelComplete, StateGameComplete;
+
+    function void init() {
+        let StatePlaying = 0;
+        let StateLevelComplete = 1;
+        let StateGameComplete = 2;
+
+        return;
+    }
+
+    function int StatePlaying() {
+        return StatePlaying;
+    }
+
+    function int StateLevelComplete() {
+        return StateLevelComplete;
+    }
+
+    function int StateGameComplete() {
+        return StateGameComplete;
+    }
+}

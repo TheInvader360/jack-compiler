@@ -1,0 +1,23 @@
+class CellType {
+    static int CellTypeNone, CellTypeGoal, CellTypeWall;
+
+    function void init() {
+        let CellTypeNone = 0;
+        let CellTypeGoal = 1;
+        let CellTypeWall = 2;
+
+        return;
+    }
+
+    function int CellTypeNone() {
+        return CellTypeNone;
+    }
+
+    function int CellTypeGoal() {
+        return CellTypeGoal;
+    }
+
+    function int CellTypeWall() {
+        return CellTypeWall;
+    }
+}

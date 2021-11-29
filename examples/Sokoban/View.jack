@@ -1,0 +1,258 @@
+class View {
+    field Model model;
+    field String controlInfoTitle;
+    field String controlInfoMove;
+    field String controlInfoReset;
+    field String controlInfoQuit;
+    field String controlInfoNext;
+    field String controlInfoRestart;
+    field String messageLevelComplete;
+    field String messageGameComplete;
+    field String messageCongratulations;
+
+    constructor View new(Model aModel) {
+        let model = aModel;
+        let controlInfoTitle = "---Controls---";
+        let controlInfoMove = "Cursors:  Move";
+        let controlInfoReset = "R:       Reset";
+        let controlInfoQuit = "Escape:   Quit";
+        let controlInfoNext = "Space:    Next";
+        let controlInfoRestart = "Space: Restart";
+        let messageLevelComplete = "LEVEL COMPLETE";
+        let messageGameComplete = "GAME COMPLETE!";
+        let messageCongratulations = "CONGRATULATIONS!";
+
+        return this;
+    }
+
+    method void draw() {
+        var int x, y;
+        var Board board;
+        var Player player;
+
+        let board = model.getBoard();
+        let player = board.getPlayer();
+
+        // not very mvc, but the more usual "fully clear and redraw the screen on each frame" approach doesn't really suit the hack platform... 
+        if (model.isScreenDirty()) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(0, 0, 511, 255);
+        }
+
+        do drawLogo();
+
+        if (model.getState() = State.StatePlaying()) {
+            do drawBoard();
+
+            do drawLevelInfo();
+
+            // draw "playing" control info
+            do Output.moveCursor(17, 48);
+            do Output.printString(controlInfoTitle);
+            do Output.moveCursor(19, 48);
+            do Output.printString(controlInfoMove);
+            do Output.moveCursor(20, 48);
+            do Output.printString(controlInfoReset);
+            do Output.moveCursor(21, 48);
+            do Output.printString(controlInfoQuit);
+        }
+
+        if (model.getState() = State.StateLevelComplete()) {
+            do drawBoard();
+
+            do drawLevelInfo();
+
+            // draw flashing level complete message
+            if (model.getTickAccumulator() < 10) {
+                do Output.moveCursor(12, 48);
+                do Output.printString(messageLevelComplete);
+            } else {
+                do Screen.setColor(false);
+                do Screen.drawRectangle(384, 133, 494, 142);
+            }
+
+            // draw "level complete" control info
+            do Output.moveCursor(17, 48);
+            do Output.printString(controlInfoTitle);
+            do Output.moveCursor(19, 48);
+            do Output.printString(controlInfoNext);
+            do Output.moveCursor(21, 48);
+            do Output.printString(controlInfoQuit);
+        }
+
+        if (model.getState() = State.StateGameComplete()) {
+            // draw game complete message
+            do Output.moveCursor(10, 16);
+            do Output.printString(messageGameComplete);
+
+            // draw alternating congratulations message and smiley face border
+            if (model.getTickAccumulator() < 10) {
+                do Output.moveCursor(12, 15);
+                do Output.printString(messageCongratulations);
+                do drawGameCompleteBorder(false);
+            } else {
+                do Screen.setColor(false);
+                do Screen.drawRectangle(120, 133, 244, 141);
+                do drawGameCompleteBorder(true);
+            }
+
+            // draw "game complete" control info
+            do Output.moveCursor(17, 48);
+            do Output.printString(controlInfoTitle);
+            do Output.moveCursor(19, 48);
+            do Output.printString(controlInfoRestart);
+            do Output.moveCursor(21, 48);
+            do Output.printString(controlInfoQuit);
+        }
+
+        return;
+    }
+
+    method void drawLogo() {
+        do Sprites.drawLogoA1(56 + (0 * 512));
+        do Sprites.drawLogoB1(57 + (0 * 512));
+        do Sprites.drawLogoC1(58 + (0 * 512));
+        do Sprites.drawLogoD1(59 + (0 * 512));
+        do Sprites.drawLogoE1(60 + (0 * 512));
+        do Sprites.drawLogoF1(61 + (0 * 512));
+        do Sprites.drawLogoG1(62 + (0 * 512));
+        do Sprites.drawLogoA2(56 + (1 * 512));
+        do Sprites.drawLogoB2(57 + (1 * 512));
+        do Sprites.drawLogoC2(58 + (1 * 512));
+        do Sprites.drawLogoD2(59 + (1 * 512));
+        do Sprites.drawLogoE2(60 + (1 * 512));
+        do Sprites.drawLogoF2(61 + (1 * 512));
+        do Sprites.drawLogoG2(62 + (1 * 512));
+        do Sprites.drawLogoA3(56 + (2 * 512));
+        do Sprites.drawLogoB3(57 + (2 * 512));
+        do Sprites.drawLogoC3(58 + (2 * 512));
+        do Sprites.drawLogoD3(59 + (2 * 512));
+        do Sprites.drawLogoE3(60 + (2 * 512));
+        do Sprites.drawLogoF3(61 + (2 * 512));
+        do Sprites.drawLogoG3(62 + (2 * 512));
+
+        return;
+    }
+
+    method void drawBoard() {
+        var Board board;
+        var int x, y, width, height, boardOffsetX, boardOffsetY;
+        var Player player;
+        var Cell cell;
+
+        let board = model.getBoard();
+        let x = 0;
+        let y = 0;
+        let width = board.getWidth();
+        let height = board.getHeight();
+        let boardOffsetX = ((22 - width) / 2) + 1;
+		let boardOffsetY = ((14 - height) / 2) + 1;
+        let player = board.getPlayer();
+
+        while (y < height) {
+            while (x < width) {
+                let cell = board.getCell(x, y);
+                if ((player.getX() = x) & (player.getY() = y)) {
+                    if (cell.getTypeOf() = CellType.CellTypeGoal()) {
+                        do Sprites.drawGoalPlayer(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                    }
+                    else {
+                        do Sprites.drawPlayer(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                    }
+                }
+                else {
+                    if (cell.getTypeOf() = CellType.CellTypeNone()) {
+                        if (cell.getHasBox()) {
+                            do Sprites.drawBox(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                        else {
+                            do Sprites.drawClear(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                    }
+                    if (cell.getTypeOf() = CellType.CellTypeGoal()) {
+                        if (cell.getHasBox()) {
+                            do Sprites.drawGoalBox(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                        else {
+                            do Sprites.drawGoal(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                    }
+                    if (cell.getTypeOf() = CellType.CellTypeWall()) {
+                        do Sprites.drawWall(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                    }
+                }
+                let x = x + 1;
+            }
+            let y = y + 1;
+            let x = 0;
+        }
+
+        return;
+    }
+
+    method void drawLevelInfo() {
+        var LevelManager levelManager;
+        var String levelInfo;
+        var int currentLevelNumber;
+        var Array currentLevelNumberDigits;
+        var int finalLevelNumber;
+        var Array finalLevelNumberDigits;
+
+        let levelManager = model.getLevelManager();
+        let levelInfo = "Level XX of YY";
+
+        let currentLevelNumber = levelManager.getCurrentLevelNumber();
+        let currentLevelNumberDigits = Array.new(2);
+        let currentLevelNumberDigits[0] = currentLevelNumber/10;
+        let currentLevelNumberDigits[1] = Utils.mod(currentLevelNumber, 10);
+        do levelInfo.setCharAt(6, 48 + currentLevelNumberDigits[0]); // 0 to 9 = 48 to 57
+        do levelInfo.setCharAt(7, 48 + currentLevelNumberDigits[1]); // 0 to 9 = 48 to 57
+
+        let finalLevelNumber = levelManager.getFinalLevelNumber();
+        let finalLevelNumberDigits = Array.new(2);
+        let finalLevelNumberDigits[0] = finalLevelNumber/10;
+        let finalLevelNumberDigits[1] = Utils.mod(finalLevelNumber, 10);
+        do levelInfo.setCharAt(12, 48 + finalLevelNumberDigits[0]); // 0 to 9 = 48 to 57
+        do levelInfo.setCharAt(13, 48 + finalLevelNumberDigits[1]); // 0 to 9 = 48 to 57
+
+        do Output.moveCursor(7, 48);
+        do Output.printString(levelInfo);
+
+        do levelInfo.dispose();
+        do currentLevelNumberDigits.dispose();
+        do finalLevelNumberDigits.dispose();
+
+        return;
+    }
+
+    method void drawGameCompleteBorder(boolean aShowSmileyFaces) {
+        var int x, y;
+
+        let x = 1;
+        let y = 1;
+
+        while (y < 15) {
+            while (x < 23) {
+                if ((x = 1) | (x = 22) | (y = 1) | (y = 14)) {
+                    if (aShowSmileyFaces) {
+                        do Sprites.drawPlayer(x + (y * 512));
+                    }
+                    else {
+                        do Sprites.drawClear(x + (y * 512));
+                    }
+                }
+                let x = x + 1;
+            }
+            let y = y + 1;
+            let x = 1;
+        }
+
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}

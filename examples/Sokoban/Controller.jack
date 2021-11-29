@@ -1,0 +1,178 @@
+class Controller {
+    field Model model;
+    field boolean running;
+    field char lastTickKey;
+
+    // creates a controller
+    constructor Controller new(Model aModel) {
+        let model = aModel;
+        let running = true;
+        let lastTickKey = 0;
+
+        return this;
+    }
+
+    // starts a new game at level 1
+    method void startNewGame() {
+        var LevelManager levelManager;
+
+        let levelManager = model.getLevelManager();
+
+        do levelManager.reset();
+        do tryStartNextLevel();
+
+        return;
+    }
+
+    // handles user input as appropriate (game state dependent behaviour)
+    method void handleInput() {
+        var char key;
+
+        let key = Keyboard.keyPressed();
+
+        if (~(key = 0)) {
+            if (~((key = Direction.U()) | (key = Direction.D()) | (key = Direction.L()) | (key = Direction.R()) | (key = 32) | (key = 82) | (key = 83) | (key = 140))) {
+                let lastTickKey = 0;
+                return;
+            }
+            if (key = 140) { // Escape = 140
+                let running = false;
+            }
+            if (~(lastTickKey = key)) {
+                if (model.getState() = State.StateGameComplete()) {
+                    if (key = 32) { // (space) = 32
+                        do startNewGame();
+                    }
+                }
+                if (model.getState() = State.StateLevelComplete()) {
+                    if (key = 32) { // (space) = 32
+                        do tryStartNextLevel();
+                    }
+                }
+                if (model.getState() = State.StatePlaying()) {
+                    if ((key = Direction.U()) | (key = Direction.D()) | (key = Direction.L()) | (key = Direction.R())) {
+                        do tryMovePlayer(key);
+                    }
+                    if (key = 82) { // R = 82
+                        do restartLevel();
+                    }
+                    if (key = 83) { // S = 83
+                        // do tryStartNextLevel(); // uncomment this line to enable cheating :)
+                    }
+                }
+            }
+            let lastTickKey = key;
+        }
+        else {
+            let lastTickKey = 0;
+        }
+
+        return;
+    }
+
+    // move player (and an adjacent box where appropriate) in the specified direction if possible & check for board completion (and handle appropriately) if a box is moved
+    method void tryMovePlayer(Direction aDirection) {
+        var Board board;
+        var Player player;
+        var int currentX, currentY, targetX, targetY, nextX, nextY;
+        var Cell targetCell;
+        var Cell nextCell;
+
+        let board = model.getBoard();
+        let player = board.getPlayer();
+        let currentX = player.getX();
+        let currentY = player.getY();
+        let targetX = currentX;
+        let targetY = currentY;
+        let nextX = targetX;
+        let nextY = targetY;
+
+        if (aDirection = Direction.U()) {
+            let targetY = targetY - 1;
+            let nextY = nextY - 2;
+        }
+        if (aDirection = Direction.D()) {
+            let targetY = targetY + 1;
+            let nextY = nextY + 2;
+        }
+        if (aDirection = Direction.L()) {
+            let targetX = targetX - 1;
+            let nextX = nextX - 2;
+        }
+        if (aDirection = Direction.R()) {
+            let targetX = targetX + 1;
+            let nextX = nextX + 2;
+        }
+
+        let targetCell = board.getCell(targetX, targetY);
+
+        if (~(targetCell.getTypeOf() = CellType.CellTypeWall())) {
+            if (targetCell.getHasBox()) {
+                let nextCell = board.getCell(nextX, nextY);
+                if ((~(nextCell.getTypeOf() = CellType.CellTypeWall())) & (~(nextCell.getHasBox()))) { // if next cell is not of type wall and next cell does not have a box...
+                    do targetCell.setHasBox(false);
+                    do nextCell.setHasBox(true);
+                    do player.moveTo(targetX, targetY);
+                    if (board.isComplete()) {
+                        do model.setState(State.StateLevelComplete());
+                    }
+                }
+            }
+            else {
+                do player.moveTo(targetX, targetY);
+            }
+        }
+
+        return;
+    }
+
+    // starts the next level if the current one isn't the last, else sets game state to game complete
+    method void tryStartNextLevel() {
+        var LevelManager levelManager;
+        var Level level;
+        var Board board;
+
+        let levelManager = model.getLevelManager();
+
+        if (levelManager.hasNextLevel()) {
+            do levelManager.progressToNextLevel();
+
+            let level = levelManager.getCurrentLevel();
+            let board = Board.new(level.getWidth(), level.getHeight(), level.getMapData());
+
+            do model.setBoard(board);
+            do model.setState(State.StatePlaying());
+        }
+        else {
+            do model.setState(State.StateGameComplete());
+        }
+
+        return;
+    }
+
+    // resets the game board to the current level's starting state
+    method void restartLevel() {
+        var LevelManager levelManager;
+        var Level level;
+        var Board board;
+
+        let levelManager = model.getLevelManager();
+        let level = levelManager.getCurrentLevel();
+        let board = Board.new(level.getWidth(), level.getHeight(), level.getMapData());
+
+        do model.setBoard(board);
+        do model.setState(State.StatePlaying());
+
+        return;
+    }
+
+    method boolean isRunning() {
+        return running;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}

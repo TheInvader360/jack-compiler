@@ -195,6 +195,17 @@ const HelloWorld_Main_Jack string = `class Main {
 }
 `
 
+const MultiConditionIf_Main_Jack string = `class Main {
+    function void main () {
+        var char key;
+        let key = Keyboard.keyPressed();
+        if ((key = Direction.U()) | (key = Direction.D()) | (key = Direction.L()) | (key = Direction.R())) {
+        }
+        return;
+    }
+}
+`
+
 const Pong_Ball_Jack string = `class Ball {
     field int x, y;
     field int lengthx, lengthy;
@@ -631,6 +642,1538 @@ const SimpleWhile_Main_Jack string = `class Main {
         while (z < 3) {
             let z = z + 1;
         }
+
+        return;
+    }
+}
+`
+
+const Sokoban_Board_Jack string = `class Board {
+    field int width, height;
+    field Array cells;
+    field Player player;
+
+    // creates a board (map data encoding: Player "@", Box "$", Goal ".", Wall "#", Goal+Player "+", Goal+Box "*")
+    constructor Board new(int aWidth, int aHeight, String aMapData) {
+        var int x, y;
+        var char cellChar;
+
+        let width = aWidth;
+        let height = aHeight;
+        let cells = Array.new(width * height);
+        let x = 0;
+        let y = 0;
+
+        while (y < height) {
+            while (x < width) {
+                let cellChar = aMapData.charAt((y * width) + x);
+                if (cellChar = 64) { // @ = 64
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeNone(), false);
+                    let player = Player.new(x, y);
+                }
+                if (cellChar = 36) { // $ = 36
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeNone(), true);
+                }
+                if (cellChar = 46) { // . = 46
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeGoal(), false);
+                }
+                if (cellChar = 35) { // # = 35
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeWall(), false);
+                }
+                if (cellChar = 43) { // + = 43
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeGoal(), false);
+                    let player = Player.new(x, y);
+                }
+                if (cellChar = 42) { // * = 42
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeGoal(), true);
+                }
+                if (cellChar = 32) { // (space) = 32
+                    let cells[(y * width) + x] = Cell.new(CellType.CellTypeNone(), false);
+                }
+                let x = x + 1;
+            }
+            let y = y + 1;
+            let x = 0;
+        }
+
+        return this;
+    }
+
+    // returns the cell at the given location
+    method Cell getCell(int aX, int aY) {
+        return cells[(aY * width) + aX];
+    }
+
+    // returns true if every goal cell on the board has a box
+    method boolean isComplete() {
+        var int i, numCells;
+        var Cell cell;
+
+        let i = 0;
+        let numCells = width * height;
+
+        while (i < numCells) {
+            let cell = cells[i];
+            if ((cell.getTypeOf() = CellType.CellTypeGoal()) & (~(cell.getHasBox()))) { // if cell is of type goal and cell does not have a box...
+                return false;
+            }
+            let i = i + 1;
+        }
+
+        return true;
+    }
+
+    method int getWidth() {
+        return width;
+    }
+
+    method Player getHeight() {
+        return height;
+    }
+
+    method Player getPlayer() {
+        return player;
+    }
+
+    method void dispose() {
+        var int i, numCells;
+        var Cell cell;
+
+        let i = 0;
+        let numCells = width * height;
+
+        while (i < numCells) {
+            let cell = cells[i];
+            do cell.dispose();
+            let i = i + 1;
+        }
+        do cells.dispose();
+        do player.dispose();
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}
+`
+
+const Sokoban_Cell_Jack string = `class Cell {
+    field CellType typeOf;
+    field boolean hasBox;
+
+    constructor Cell new(CellType aTypeOf, boolean aHasBox) {
+        let typeOf = aTypeOf;
+        let hasBox = aHasBox;
+
+        return this;
+    }
+
+    method CellType getTypeOf() {
+        return typeOf;
+    }
+
+    method boolean getHasBox() {
+        return hasBox;
+    }
+
+    method void setHasBox(boolean aHasBox) {
+        let hasBox = aHasBox;
+
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}
+`
+
+const Sokoban_CellType_Jack string = `class CellType {
+    static int CellTypeNone, CellTypeGoal, CellTypeWall;
+
+    function void init() {
+        let CellTypeNone = 0;
+        let CellTypeGoal = 1;
+        let CellTypeWall = 2;
+
+        return;
+    }
+
+    function int CellTypeNone() {
+        return CellTypeNone;
+    }
+
+    function int CellTypeGoal() {
+        return CellTypeGoal;
+    }
+
+    function int CellTypeWall() {
+        return CellTypeWall;
+    }
+}
+`
+
+const Sokoban_Controller_Jack string = `class Controller {
+    field Model model;
+    field boolean running;
+    field char lastTickKey;
+
+    // creates a controller
+    constructor Controller new(Model aModel) {
+        let model = aModel;
+        let running = true;
+        let lastTickKey = 0;
+
+        return this;
+    }
+
+    // starts a new game at level 1
+    method void startNewGame() {
+        var LevelManager levelManager;
+
+        let levelManager = model.getLevelManager();
+
+        do levelManager.reset();
+        do tryStartNextLevel();
+
+        return;
+    }
+
+    // handles user input as appropriate (game state dependent behaviour)
+    method void handleInput() {
+        var char key;
+
+        let key = Keyboard.keyPressed();
+
+        if (~(key = 0)) {
+            if (~((key = Direction.U()) | (key = Direction.D()) | (key = Direction.L()) | (key = Direction.R()) | (key = 32) | (key = 82) | (key = 83) | (key = 140))) {
+                let lastTickKey = 0;
+                return;
+            }
+            if (key = 140) { // Escape = 140
+                let running = false;
+            }
+            if (~(lastTickKey = key)) {
+                if (model.getState() = State.StateGameComplete()) {
+                    if (key = 32) { // (space) = 32
+                        do startNewGame();
+                    }
+                }
+                if (model.getState() = State.StateLevelComplete()) {
+                    if (key = 32) { // (space) = 32
+                        do tryStartNextLevel();
+                    }
+                }
+                if (model.getState() = State.StatePlaying()) {
+                    if ((key = Direction.U()) | (key = Direction.D()) | (key = Direction.L()) | (key = Direction.R())) {
+                        do tryMovePlayer(key);
+                    }
+                    if (key = 82) { // R = 82
+                        do restartLevel();
+                    }
+                    if (key = 83) { // S = 83
+                        // do tryStartNextLevel(); // uncomment this line to enable cheating :)
+                    }
+                }
+            }
+            let lastTickKey = key;
+        }
+        else {
+            let lastTickKey = 0;
+        }
+
+        return;
+    }
+
+    // move player (and an adjacent box where appropriate) in the specified direction if possible & check for board completion (and handle appropriately) if a box is moved
+    method void tryMovePlayer(Direction aDirection) {
+        var Board board;
+        var Player player;
+        var int currentX, currentY, targetX, targetY, nextX, nextY;
+        var Cell targetCell;
+        var Cell nextCell;
+
+        let board = model.getBoard();
+        let player = board.getPlayer();
+        let currentX = player.getX();
+        let currentY = player.getY();
+        let targetX = currentX;
+        let targetY = currentY;
+        let nextX = targetX;
+        let nextY = targetY;
+
+        if (aDirection = Direction.U()) {
+            let targetY = targetY - 1;
+            let nextY = nextY - 2;
+        }
+        if (aDirection = Direction.D()) {
+            let targetY = targetY + 1;
+            let nextY = nextY + 2;
+        }
+        if (aDirection = Direction.L()) {
+            let targetX = targetX - 1;
+            let nextX = nextX - 2;
+        }
+        if (aDirection = Direction.R()) {
+            let targetX = targetX + 1;
+            let nextX = nextX + 2;
+        }
+
+        let targetCell = board.getCell(targetX, targetY);
+
+        if (~(targetCell.getTypeOf() = CellType.CellTypeWall())) {
+            if (targetCell.getHasBox()) {
+                let nextCell = board.getCell(nextX, nextY);
+                if ((~(nextCell.getTypeOf() = CellType.CellTypeWall())) & (~(nextCell.getHasBox()))) { // if next cell is not of type wall and next cell does not have a box...
+                    do targetCell.setHasBox(false);
+                    do nextCell.setHasBox(true);
+                    do player.moveTo(targetX, targetY);
+                    if (board.isComplete()) {
+                        do model.setState(State.StateLevelComplete());
+                    }
+                }
+            }
+            else {
+                do player.moveTo(targetX, targetY);
+            }
+        }
+
+        return;
+    }
+
+    // starts the next level if the current one isn't the last, else sets game state to game complete
+    method void tryStartNextLevel() {
+        var LevelManager levelManager;
+        var Level level;
+        var Board board;
+
+        let levelManager = model.getLevelManager();
+
+        if (levelManager.hasNextLevel()) {
+            do levelManager.progressToNextLevel();
+
+            let level = levelManager.getCurrentLevel();
+            let board = Board.new(level.getWidth(), level.getHeight(), level.getMapData());
+
+            do model.setBoard(board);
+            do model.setState(State.StatePlaying());
+        }
+        else {
+            do model.setState(State.StateGameComplete());
+        }
+
+        return;
+    }
+
+    // resets the game board to the current level's starting state
+    method void restartLevel() {
+        var LevelManager levelManager;
+        var Level level;
+        var Board board;
+
+        let levelManager = model.getLevelManager();
+        let level = levelManager.getCurrentLevel();
+        let board = Board.new(level.getWidth(), level.getHeight(), level.getMapData());
+
+        do model.setBoard(board);
+        do model.setState(State.StatePlaying());
+
+        return;
+    }
+
+    method boolean isRunning() {
+        return running;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}
+`
+
+const Sokoban_Direction_Jack string = `class Direction {
+    static int U, D, L, R;
+
+    function void init() {
+        let U = 131;
+        let D = 133;
+        let L = 130;
+        let R = 132;
+
+        return;
+    }
+
+    function int U() {
+        return U;
+    }
+
+    function int D() {
+        return D;
+    }
+
+    function int L() {
+        return L;
+    }
+
+    function int R() {
+        return R;
+    }
+}
+`
+
+const Sokoban_Level_Jack string = `class Level {
+    field int width, height;
+    field string mapData; // Player "@", Box "$", Goal ".", Wall "#", Goal+Player "+", Goal+Box "*", None " "
+
+    constructor Level new(int aWidth, int aHeight, string aMapData) {
+        let width = aWidth;
+        let height = aHeight;
+        let mapData = aMapData;
+
+        return this;
+    }
+
+    method int getWidth() {
+        return width;
+    }
+
+    method int getHeight() {
+        return height;
+    }
+
+    method string getMapData() {
+        return mapData;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}
+`
+
+const Sokoban_LevelManager_Jack string = `class LevelManager {
+    field int currentLevelNumber, finalLevelNumber;
+    field Array levels;
+
+    // creates a level manager
+    constructor LevelManager new() {
+        let currentLevelNumber = 0;
+        let finalLevelNumber = 10;
+        let levels = Array.new(finalLevelNumber+1);
+        let levels[0] = Level.new(0, 0, "");
+        let levels[1] = Level.new(8, 8, "  ###     #.#     # #######$ $.##. $@#######$#     #.#     ###  ");
+        let levels[2] = Level.new(9, 9, "#####    #   #    # $@# #### $$# #.#### ###.# ##    .# #   #  # #   #### #####   ");
+        let levels[3] = Level.new(6, 8, " #### ##  # # @$# ##$ #### $ ##.$  ##..*.#######");
+        let levels[4] = Level.new(8, 8, " ####    #@ ###  # $  # ### # ###.# #  ##.$  # ##.   $ #########");
+        let levels[5] = Level.new(8, 7, "  ######  #    ####$$$ ##@ $.. ## $...######  #    #### ");
+        let levels[6] = Level.new(8, 7, "  ##### ###  @# #  $. ###  .$. #### *$ #  #   ##  ##### ");
+        let levels[7] = Level.new(8, 8, "  ####    #..#   ## .##  #  $.# ## $  ###  #$$ ##  @   #########");
+        let levels[8] = Level.new(8, 7, "#########  #   ##@$..$ ## $.* ### $..$ ##  #   #########");
+        let levels[9] = Level.new(9, 7, "######   #    #   # $$$##  #  #..#####  ..$ # # @    # ########");
+        let levels[10] = Level.new(7, 8, "########..$..##..#..## $$$ ##  $  ## $$$ ##  #@ ########");
+
+        return this;
+    }
+
+    // returns the current level number
+    method int getCurrentLevelNumber() {
+        return currentLevelNumber;
+    }
+
+    // returns the final level number
+    method int getFinalLevelNumber() {
+        return finalLevelNumber;
+    }
+
+    // returns the current level
+    method Level getCurrentLevel() {
+        return levels[currentLevelNumber];
+    }
+
+    // returns true if the current level is not the last
+    method boolean hasNextLevel() {
+        return currentLevelNumber < finalLevelNumber;
+    }
+
+    // increments the current level
+    method void progressToNextLevel() {
+        let currentLevelNumber = currentLevelNumber + 1;
+
+        return;
+    }
+
+    // resets the level manager
+    method void reset() {
+        let currentLevelNumber = 0;
+
+        return;
+    }
+
+    method void dispose() {
+        do levels.dispose();
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}
+`
+
+const Sokoban_Main_Jack string = `class Main {
+    function void main() {
+        var Direction direction;
+        var Model model;
+        var View view;
+        var Controller controller;
+
+        do CellType.init();
+        do Direction.init();
+        do State.init();
+        
+        let model = Model.new();
+        let view = View.new(model);
+        let controller = Controller.new(model);
+
+        do controller.startNewGame();
+
+        while (controller.isRunning()) {
+            do controller.handleInput();
+            do view.draw();
+            do model.update();
+            do Sys.wait(10);
+        }
+
+        do model.dispose();
+        do view.dispose();
+        do controller.dispose();
+
+        return;
+    }
+}
+`
+
+const Sokoban_Model_Jack string = `class Model {
+    field LevelManager levelManager;
+    field Board board;
+    field State state;
+    field int tickAccumulator;
+    field boolean screenDirty;
+
+    constructor Model new() {
+        let levelManager = LevelManager.new();
+        let state = State.StatePlaying();
+        let tickAccumulator = 0;
+        let screenDirty = false;
+        return this;
+    }
+
+    method void update() {
+        let tickAccumulator = tickAccumulator + 1;
+        if (tickAccumulator > 20) {
+            let tickAccumulator = 0;
+        }
+        if (screenDirty) {
+            let screenDirty = false;
+        }
+
+        return;
+    }
+
+    method LevelManager getLevelManager() {
+        return levelManager;
+    }
+
+    method Board getBoard() {
+        return board;
+    }
+
+    method State getState() {
+        return state;
+    }
+
+    method int getTickAccumulator() {
+        return tickAccumulator;
+    }
+
+    method boolean isScreenDirty() {
+        return screenDirty;
+    }
+
+    method void setBoard(Board aBoard) {
+        if (~(board = null)) {
+            do board.dispose();
+        }
+        let board = aBoard;
+
+        return;
+    }
+
+    method void setState(State aState) {
+        let state = aState;
+        let screenDirty = true; // forces a full screen refresh on state change
+
+        return;
+    }
+
+    method void dispose() {
+        do levelManager.dispose();
+        do board.dispose();
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}
+`
+
+const Sokoban_Player_Jack string = `class Player {
+    field int x, y;
+
+    constructor Player new(int ax, int ay) {
+        let x = ax;
+        let y = ay;
+
+        return this;
+    }
+
+    method int getX() {
+        return x;
+    }
+
+    method int getY() {
+        return y;
+    }
+
+    method void moveTo(int aX, int aY) {
+        let x = aX;
+        let y = aY;
+
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+
+        return;
+    }
+}
+`
+
+const Sokoban_Sprites_Jack string = `class Sprites {
+
+    function void drawBox(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 4080);
+        do Memory.poke(memAddress+128, 8184);
+        do Memory.poke(memAddress+160, 8184);
+        do Memory.poke(memAddress+192, 8184);
+        do Memory.poke(memAddress+224, 8184);
+        do Memory.poke(memAddress+256, 8184);
+        do Memory.poke(memAddress+288, 8184);
+        do Memory.poke(memAddress+320, 8184);
+        do Memory.poke(memAddress+352, 8184);
+        do Memory.poke(memAddress+384, 4080);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawClear(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawGoal(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 16380);
+        do Memory.poke(memAddress+64, 24582);
+        do Memory.poke(memAddress+96, 16386);
+        do Memory.poke(memAddress+128, 16386);
+        do Memory.poke(memAddress+160, 16386);
+        do Memory.poke(memAddress+192, 16386);
+        do Memory.poke(memAddress+224, 16386);
+        do Memory.poke(memAddress+256, 16386);
+        do Memory.poke(memAddress+288, 16386);
+        do Memory.poke(memAddress+320, 16386);
+        do Memory.poke(memAddress+352, 16386);
+        do Memory.poke(memAddress+384, 16386);
+        do Memory.poke(memAddress+416, 24582);
+        do Memory.poke(memAddress+448, 16380);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawGoalBox(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 16380);
+        do Memory.poke(memAddress+64, 24582);
+        do Memory.poke(memAddress+96, 20466);
+        do Memory.poke(memAddress+128, 24570);
+        do Memory.poke(memAddress+160, 24570);
+        do Memory.poke(memAddress+192, 24570);
+        do Memory.poke(memAddress+224, 24570);
+        do Memory.poke(memAddress+256, 24570);
+        do Memory.poke(memAddress+288, 24570);
+        do Memory.poke(memAddress+320, 24570);
+        do Memory.poke(memAddress+352, 24570);
+        do Memory.poke(memAddress+384, 20466);
+        do Memory.poke(memAddress+416, 24582);
+        do Memory.poke(memAddress+448, 16380);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawGoalPlayer(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 16380);
+        do Memory.poke(memAddress+64, 24582);
+        do Memory.poke(memAddress+96, 16386);
+        do Memory.poke(memAddress+128, 18402);
+        do Memory.poke(memAddress+160, 20466);
+        do Memory.poke(memAddress+192, 19890);
+        do Memory.poke(memAddress+224, 23994);
+        do Memory.poke(memAddress+256, 24570);
+        do Memory.poke(memAddress+288, 19410);
+        do Memory.poke(memAddress+320, 19506);
+        do Memory.poke(memAddress+352, 18402);
+        do Memory.poke(memAddress+384, 16386);
+        do Memory.poke(memAddress+416, 24582);
+        do Memory.poke(memAddress+448, 16380);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoA1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, -4096);
+        do Memory.poke(memAddress+320, -1024);
+        do Memory.poke(memAddress+352, -512);
+        do Memory.poke(memAddress+384, 7936);
+        do Memory.poke(memAddress+416, 16128);
+        do Memory.poke(memAddress+448, -256);
+        do Memory.poke(memAddress+480, -512);
+        return;
+    }
+
+    function void drawLogoA2(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, -2048);
+        do Memory.poke(memAddress+32, -16384);
+        do Memory.poke(memAddress+64, -28928);
+        do Memory.poke(memAddress+96, -256);
+        do Memory.poke(memAddress+128, -512);
+        do Memory.poke(memAddress+160, -512);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoA3(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, -1024);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 16384);
+        do Memory.poke(memAddress+192, -8192);
+        do Memory.poke(memAddress+224, -20480);
+        do Memory.poke(memAddress+256, -2048);
+        do Memory.poke(memAddress+288, -6144);
+        do Memory.poke(memAddress+320, 10240);
+        do Memory.poke(memAddress+352, 16384);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, -1024);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoB1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 15879);
+        do Memory.poke(memAddress+320, -121);
+        do Memory.poke(memAddress+352, -49);
+        do Memory.poke(memAddress+384, -2097);
+        do Memory.poke(memAddress+416, -7200);
+        do Memory.poke(memAddress+448, -7199);
+        do Memory.poke(memAddress+480, -7193);
+        return;
+    }
+
+    function void drawLogoB2(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, -7185);
+        do Memory.poke(memAddress+32, -7185);
+        do Memory.poke(memAddress+64, -2097);
+        do Memory.poke(memAddress+96, -57);
+        do Memory.poke(memAddress+128, -125);
+        do Memory.poke(memAddress+160, 15872);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoB3(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, -1);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 24320);
+        do Memory.poke(memAddress+160, 17412);
+        do Memory.poke(memAddress+192, 17423);
+        do Memory.poke(memAddress+224, 17435);
+        do Memory.poke(memAddress+256, -15297);
+        do Memory.poke(memAddress+288, 17455);
+        do Memory.poke(memAddress+320, 17448);
+        do Memory.poke(memAddress+352, 17412);
+        do Memory.poke(memAddress+384, 17408);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, -1);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoC1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 4344);
+        do Memory.poke(memAddress+320, 14584);
+        do Memory.poke(memAddress+352, -775);
+        do Memory.poke(memAddress+384, 32505);
+        do Memory.poke(memAddress+416, 16371);
+        do Memory.poke(memAddress+448, 8179);
+        do Memory.poke(memAddress+480, 4083);
+        return;
+    }
+
+    function void drawLogoC2(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 8179);
+        do Memory.poke(memAddress+32, 16371);
+        do Memory.poke(memAddress+64, 32505);
+        do Memory.poke(memAddress+96, -775);
+        do Memory.poke(memAddress+128, 30968);
+        do Memory.poke(memAddress+160, 6392);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoC3(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, -1);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 32244);
+        do Memory.poke(memAddress+160, 4116);
+        do Memory.poke(memAddress+192, 4116);
+        do Memory.poke(memAddress+224, 4116);
+        do Memory.poke(memAddress+256, 4215);
+        do Memory.poke(memAddress+288, 4116);
+        do Memory.poke(memAddress+320, 4116);
+        do Memory.poke(memAddress+352, 4116);
+        do Memory.poke(memAddress+384, 32244);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, -1);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoD1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, -31776);
+        do Memory.poke(memAddress+320, -28680);
+        do Memory.poke(memAddress+352, -24580);
+        do Memory.poke(memAddress+384, -24708);
+        do Memory.poke(memAddress+416, 15934);
+        do Memory.poke(memAddress+448, 15934);
+        do Memory.poke(memAddress+480, 15934);
+        return;
+    }
+
+    function void drawLogoD2(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 15934);
+        do Memory.poke(memAddress+32, 15934);
+        do Memory.poke(memAddress+64, -24708);
+        do Memory.poke(memAddress+96, -24580);
+        do Memory.poke(memAddress+128, -28680);
+        do Memory.poke(memAddress+160, -31776);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 8);
+        do Memory.poke(memAddress+288, 8);
+        do Memory.poke(memAddress+320, 2360);
+        do Memory.poke(memAddress+352, 2376);
+        do Memory.poke(memAddress+384, 2376);
+        do Memory.poke(memAddress+416, 3640);
+        do Memory.poke(memAddress+448, 2048);
+        do Memory.poke(memAddress+480, 1792);
+        return;
+    }
+
+    function void drawLogoD3(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, -1);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, -7087);
+        do Memory.poke(memAddress+160, 5203);
+        do Memory.poke(memAddress+192, 5205);
+        do Memory.poke(memAddress+224, 5209);
+        do Memory.poke(memAddress+256, -2991);
+        do Memory.poke(memAddress+288, 5201);
+        do Memory.poke(memAddress+320, 5201);
+        do Memory.poke(memAddress+352, 4753);
+        do Memory.poke(memAddress+384, 4369);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, -1);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoE1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 255);
+        do Memory.poke(memAddress+320, 511);
+        do Memory.poke(memAddress+352, 1023);
+        do Memory.poke(memAddress+384, 1999);
+        do Memory.poke(memAddress+416, 1999);
+        do Memory.poke(memAddress+448, 1023);
+        do Memory.poke(memAddress+480, -31745);
+        return;
+    }
+
+    function void drawLogoE2(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, -30721);
+        do Memory.poke(memAddress+32, -28785);
+        do Memory.poke(memAddress+64, -12337);
+        do Memory.poke(memAddress+96, -12289);
+        do Memory.poke(memAddress+128, -6145);
+        do Memory.poke(memAddress+160, -7169);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoE3(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, -1);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, -8388);
+        do Memory.poke(memAddress+160, 16709);
+        do Memory.poke(memAddress+192, 16709);
+        do Memory.poke(memAddress+224, 16709);
+        do Memory.poke(memAddress+256, -14523);
+        do Memory.poke(memAddress+288, 16709);
+        do Memory.poke(memAddress+320, 16709);
+        do Memory.poke(memAddress+352, 16709);
+        do Memory.poke(memAddress+384, 24381);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, -1);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoF1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, -1986);
+        do Memory.poke(memAddress+320, -1986);
+        do Memory.poke(memAddress+352, -1986);
+        do Memory.poke(memAddress+384, -1921);
+        do Memory.poke(memAddress+416, -3969);
+        do Memory.poke(memAddress+448, -3977);
+        do Memory.poke(memAddress+480, -3849);
+        return;
+    }
+
+    function void drawLogoF2(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, -3849);
+        do Memory.poke(memAddress+32, -3841);
+        do Memory.poke(memAddress+64, -1537);
+        do Memory.poke(memAddress+96, -1537);
+        do Memory.poke(memAddress+128, -1053);
+        do Memory.poke(memAddress+160, -1053);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoF3(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, -1);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 30947);
+        do Memory.poke(memAddress+160, 1300);
+        do Memory.poke(memAddress+192, 1284);
+        do Memory.poke(memAddress+224, 1284);
+        do Memory.poke(memAddress+256, 15555);
+        do Memory.poke(memAddress+288, 17666);
+        do Memory.poke(memAddress+320, 17668);
+        do Memory.poke(memAddress+352, 17684);
+        do Memory.poke(memAddress+384, 14564);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, -1);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoG1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+        do Memory.poke(memAddress+160, 0);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 248);
+        do Memory.poke(memAddress+320, 248);
+        do Memory.poke(memAddress+352, 249);
+        do Memory.poke(memAddress+384, 251);
+        do Memory.poke(memAddress+416, 123);
+        do Memory.poke(memAddress+448, 127);
+        do Memory.poke(memAddress+480, 127);
+        return;
+    }
+
+    function void drawLogoG2(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 127);
+        do Memory.poke(memAddress+32, 126);
+        do Memory.poke(memAddress+64, 254);
+        do Memory.poke(memAddress+96, 252);
+        do Memory.poke(memAddress+128, 248);
+        do Memory.poke(memAddress+160, 248);
+        do Memory.poke(memAddress+192, 0);
+        do Memory.poke(memAddress+224, 0);
+        do Memory.poke(memAddress+256, 0);
+        do Memory.poke(memAddress+288, 0);
+        do Memory.poke(memAddress+320, 0);
+        do Memory.poke(memAddress+352, 0);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawLogoG3(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 63);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 14);
+        do Memory.poke(memAddress+160, 17);
+        do Memory.poke(memAddress+192, 17);
+        do Memory.poke(memAddress+224, 25);
+        do Memory.poke(memAddress+256, 21);
+        do Memory.poke(memAddress+288, 19);
+        do Memory.poke(memAddress+320, 17);
+        do Memory.poke(memAddress+352, 17);
+        do Memory.poke(memAddress+384, 14);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 63);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawPlayer(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 2016);
+        do Memory.poke(memAddress+160, 4080);
+        do Memory.poke(memAddress+192, 3504);
+        do Memory.poke(memAddress+224, 7608);
+        do Memory.poke(memAddress+256, 8184);
+        do Memory.poke(memAddress+288, 3024);
+        do Memory.poke(memAddress+320, 3120);
+        do Memory.poke(memAddress+352, 2016);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    function void drawWall(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 32766);
+        do Memory.poke(memAddress+64, 16386);
+        do Memory.poke(memAddress+96, 19114);
+        do Memory.poke(memAddress+128, 21842);
+        do Memory.poke(memAddress+160, 19114);
+        do Memory.poke(memAddress+192, 21842);
+        do Memory.poke(memAddress+224, 19114);
+        do Memory.poke(memAddress+256, 21842);
+        do Memory.poke(memAddress+288, 19114);
+        do Memory.poke(memAddress+320, 21842);
+        do Memory.poke(memAddress+352, 19114);
+        do Memory.poke(memAddress+384, 21842);
+        do Memory.poke(memAddress+416, 16386);
+        do Memory.poke(memAddress+448, 32766);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+}
+`
+
+const Sokoban_State_Jack string = `class State {
+    static int StatePlaying, StateLevelComplete, StateGameComplete;
+
+    function void init() {
+        let StatePlaying = 0;
+        let StateLevelComplete = 1;
+        let StateGameComplete = 2;
+
+        return;
+    }
+
+    function int StatePlaying() {
+        return StatePlaying;
+    }
+
+    function int StateLevelComplete() {
+        return StateLevelComplete;
+    }
+
+    function int StateGameComplete() {
+        return StateGameComplete;
+    }
+}
+`
+
+const Sokoban_Utils_Jack string = `class Utils {
+    // the modulo operation returns the remainder of a division e.g. mod(5, 2) would return 1, because 5 divided by 2 has a quotient of 2 and a remainder of 1... mod(a,b) = a-b*(a/b)
+    function int mod(int dividend, int divisor) {
+        var int quotient;
+
+        let quotient = dividend / divisor;
+
+        return (dividend - (quotient * divisor));
+    }
+}
+`
+
+const Sokoban_View_Jack string = `class View {
+    field Model model;
+    field String controlInfoTitle;
+    field String controlInfoMove;
+    field String controlInfoReset;
+    field String controlInfoQuit;
+    field String controlInfoNext;
+    field String controlInfoRestart;
+    field String messageLevelComplete;
+    field String messageGameComplete;
+    field String messageCongratulations;
+
+    constructor View new(Model aModel) {
+        let model = aModel;
+        let controlInfoTitle = "---Controls---";
+        let controlInfoMove = "Cursors:  Move";
+        let controlInfoReset = "R:       Reset";
+        let controlInfoQuit = "Escape:   Quit";
+        let controlInfoNext = "Space:    Next";
+        let controlInfoRestart = "Space: Restart";
+        let messageLevelComplete = "LEVEL COMPLETE";
+        let messageGameComplete = "GAME COMPLETE!";
+        let messageCongratulations = "CONGRATULATIONS!";
+
+        return this;
+    }
+
+    method void draw() {
+        var int x, y;
+        var Board board;
+        var Player player;
+
+        let board = model.getBoard();
+        let player = board.getPlayer();
+
+        // not very mvc, but the more usual "fully clear and redraw the screen on each frame" approach doesn't really suit the hack platform... 
+        if (model.isScreenDirty()) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(0, 0, 511, 255);
+        }
+
+        do drawLogo();
+
+        if (model.getState() = State.StatePlaying()) {
+            do drawBoard();
+
+            do drawLevelInfo();
+
+            // draw "playing" control info
+            do Output.moveCursor(17, 48);
+            do Output.printString(controlInfoTitle);
+            do Output.moveCursor(19, 48);
+            do Output.printString(controlInfoMove);
+            do Output.moveCursor(20, 48);
+            do Output.printString(controlInfoReset);
+            do Output.moveCursor(21, 48);
+            do Output.printString(controlInfoQuit);
+        }
+
+        if (model.getState() = State.StateLevelComplete()) {
+            do drawBoard();
+
+            do drawLevelInfo();
+
+            // draw flashing level complete message
+            if (model.getTickAccumulator() < 10) {
+                do Output.moveCursor(12, 48);
+                do Output.printString(messageLevelComplete);
+            } else {
+                do Screen.setColor(false);
+                do Screen.drawRectangle(384, 133, 494, 142);
+            }
+
+            // draw "level complete" control info
+            do Output.moveCursor(17, 48);
+            do Output.printString(controlInfoTitle);
+            do Output.moveCursor(19, 48);
+            do Output.printString(controlInfoNext);
+            do Output.moveCursor(21, 48);
+            do Output.printString(controlInfoQuit);
+        }
+
+        if (model.getState() = State.StateGameComplete()) {
+            // draw game complete message
+            do Output.moveCursor(10, 16);
+            do Output.printString(messageGameComplete);
+
+            // draw alternating congratulations message and smiley face border
+            if (model.getTickAccumulator() < 10) {
+                do Output.moveCursor(12, 15);
+                do Output.printString(messageCongratulations);
+                do drawGameCompleteBorder(false);
+            } else {
+                do Screen.setColor(false);
+                do Screen.drawRectangle(120, 133, 244, 141);
+                do drawGameCompleteBorder(true);
+            }
+
+            // draw "game complete" control info
+            do Output.moveCursor(17, 48);
+            do Output.printString(controlInfoTitle);
+            do Output.moveCursor(19, 48);
+            do Output.printString(controlInfoRestart);
+            do Output.moveCursor(21, 48);
+            do Output.printString(controlInfoQuit);
+        }
+
+        return;
+    }
+
+    method void drawLogo() {
+        do Sprites.drawLogoA1(56 + (0 * 512));
+        do Sprites.drawLogoB1(57 + (0 * 512));
+        do Sprites.drawLogoC1(58 + (0 * 512));
+        do Sprites.drawLogoD1(59 + (0 * 512));
+        do Sprites.drawLogoE1(60 + (0 * 512));
+        do Sprites.drawLogoF1(61 + (0 * 512));
+        do Sprites.drawLogoG1(62 + (0 * 512));
+        do Sprites.drawLogoA2(56 + (1 * 512));
+        do Sprites.drawLogoB2(57 + (1 * 512));
+        do Sprites.drawLogoC2(58 + (1 * 512));
+        do Sprites.drawLogoD2(59 + (1 * 512));
+        do Sprites.drawLogoE2(60 + (1 * 512));
+        do Sprites.drawLogoF2(61 + (1 * 512));
+        do Sprites.drawLogoG2(62 + (1 * 512));
+        do Sprites.drawLogoA3(56 + (2 * 512));
+        do Sprites.drawLogoB3(57 + (2 * 512));
+        do Sprites.drawLogoC3(58 + (2 * 512));
+        do Sprites.drawLogoD3(59 + (2 * 512));
+        do Sprites.drawLogoE3(60 + (2 * 512));
+        do Sprites.drawLogoF3(61 + (2 * 512));
+        do Sprites.drawLogoG3(62 + (2 * 512));
+
+        return;
+    }
+
+    method void drawBoard() {
+        var Board board;
+        var int x, y, width, height, boardOffsetX, boardOffsetY;
+        var Player player;
+        var Cell cell;
+
+        let board = model.getBoard();
+        let x = 0;
+        let y = 0;
+        let width = board.getWidth();
+        let height = board.getHeight();
+        let boardOffsetX = ((22 - width) / 2) + 1;
+		let boardOffsetY = ((14 - height) / 2) + 1;
+        let player = board.getPlayer();
+
+        while (y < height) {
+            while (x < width) {
+                let cell = board.getCell(x, y);
+                if ((player.getX() = x) & (player.getY() = y)) {
+                    if (cell.getTypeOf() = CellType.CellTypeGoal()) {
+                        do Sprites.drawGoalPlayer(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                    }
+                    else {
+                        do Sprites.drawPlayer(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                    }
+                }
+                else {
+                    if (cell.getTypeOf() = CellType.CellTypeNone()) {
+                        if (cell.getHasBox()) {
+                            do Sprites.drawBox(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                        else {
+                            do Sprites.drawClear(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                    }
+                    if (cell.getTypeOf() = CellType.CellTypeGoal()) {
+                        if (cell.getHasBox()) {
+                            do Sprites.drawGoalBox(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                        else {
+                            do Sprites.drawGoal(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                        }
+                    }
+                    if (cell.getTypeOf() = CellType.CellTypeWall()) {
+                        do Sprites.drawWall(boardOffsetX + x + ((boardOffsetY + y) * 512));
+                    }
+                }
+                let x = x + 1;
+            }
+            let y = y + 1;
+            let x = 0;
+        }
+
+        return;
+    }
+
+    method void drawLevelInfo() {
+        var LevelManager levelManager;
+        var String levelInfo;
+        var int currentLevelNumber;
+        var Array currentLevelNumberDigits;
+        var int finalLevelNumber;
+        var Array finalLevelNumberDigits;
+
+        let levelManager = model.getLevelManager();
+        let levelInfo = "Level XX of YY";
+
+        let currentLevelNumber = levelManager.getCurrentLevelNumber();
+        let currentLevelNumberDigits = Array.new(2);
+        let currentLevelNumberDigits[0] = currentLevelNumber/10;
+        let currentLevelNumberDigits[1] = Utils.mod(currentLevelNumber, 10);
+        do levelInfo.setCharAt(6, 48 + currentLevelNumberDigits[0]); // 0 to 9 = 48 to 57
+        do levelInfo.setCharAt(7, 48 + currentLevelNumberDigits[1]); // 0 to 9 = 48 to 57
+
+        let finalLevelNumber = levelManager.getFinalLevelNumber();
+        let finalLevelNumberDigits = Array.new(2);
+        let finalLevelNumberDigits[0] = finalLevelNumber/10;
+        let finalLevelNumberDigits[1] = Utils.mod(finalLevelNumber, 10);
+        do levelInfo.setCharAt(12, 48 + finalLevelNumberDigits[0]); // 0 to 9 = 48 to 57
+        do levelInfo.setCharAt(13, 48 + finalLevelNumberDigits[1]); // 0 to 9 = 48 to 57
+
+        do Output.moveCursor(7, 48);
+        do Output.printString(levelInfo);
+
+        do levelInfo.dispose();
+        do currentLevelNumberDigits.dispose();
+        do finalLevelNumberDigits.dispose();
+
+        return;
+    }
+
+    method void drawGameCompleteBorder(boolean aShowSmileyFaces) {
+        var int x, y;
+
+        let x = 1;
+        let y = 1;
+
+        while (y < 15) {
+            while (x < 23) {
+                if ((x = 1) | (x = 22) | (y = 1) | (y = 14)) {
+                    if (aShowSmileyFaces) {
+                        do Sprites.drawPlayer(x + (y * 512));
+                    }
+                    else {
+                        do Sprites.drawClear(x + (y * 512));
+                    }
+                }
+                let x = x + 1;
+            }
+            let y = y + 1;
+            let x = 1;
+        }
+
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
 
         return;
     }
@@ -8028,6 +9571,32 @@ push constant 0
 return
 `
 
+const MultiConditionIf_Main_VM string = `function Main.main 1
+call Keyboard.keyPressed 0
+pop local 0
+push local 0
+call Direction.U 0
+eq
+push local 0
+call Direction.D 0
+eq
+or
+push local 0
+call Direction.L 0
+eq
+or
+push local 0
+call Direction.R 0
+eq
+or
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+label IF_FALSE0
+push constant 0
+return
+`
+
 const Pong_Ball_VM string = `function Ball.new 0
 push constant 15
 call Memory.alloc 1
@@ -9132,6 +10701,6576 @@ add
 pop local 2
 goto WHILE_EXP2
 label WHILE_END2
+push constant 0
+return
+`
+
+const Sokoban_Board_VM string = `function Board.new 3
+push constant 4
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push this 0
+push this 1
+call Math.multiply 2
+call Array.new 1
+pop this 2
+push constant 0
+pop local 0
+push constant 0
+pop local 1
+label WHILE_EXP0
+push local 1
+push this 1
+lt
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+push this 0
+lt
+not
+if-goto WHILE_END1
+push argument 2
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+call String.charAt 2
+pop local 2
+push local 2
+push constant 64
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeNone 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push local 1
+call Player.new 2
+pop this 3
+label IF_FALSE0
+push local 2
+push constant 36
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeNone 0
+push constant 0
+not
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE1
+push local 2
+push constant 46
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeGoal 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE2
+push local 2
+push constant 35
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeWall 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE3
+push local 2
+push constant 43
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeGoal 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push local 1
+call Player.new 2
+pop this 3
+label IF_FALSE4
+push local 2
+push constant 42
+eq
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeGoal 0
+push constant 0
+not
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE5
+push local 2
+push constant 32
+eq
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push local 1
+push this 0
+call Math.multiply 2
+push local 0
+add
+push this 2
+add
+call CellType.CellTypeNone 0
+push constant 0
+call Cell.new 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label IF_FALSE6
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP1
+label WHILE_END1
+push local 1
+push constant 1
+add
+pop local 1
+push constant 0
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push pointer 0
+return
+function Board.getCell 0
+push argument 0
+pop pointer 0
+push argument 2
+push this 0
+call Math.multiply 2
+push argument 1
+add
+push this 2
+add
+pop pointer 1
+push that 0
+return
+function Board.isComplete 3
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+push this 0
+push this 1
+call Math.multiply 2
+pop local 1
+label WHILE_EXP0
+push local 0
+push local 1
+lt
+not
+if-goto WHILE_END0
+push local 0
+push this 2
+add
+pop pointer 1
+push that 0
+pop local 2
+push local 2
+call Cell.getTypeOf 1
+call CellType.CellTypeGoal 0
+eq
+push local 2
+call Cell.getHasBox 1
+not
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+return
+label IF_FALSE0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+not
+return
+function Board.getWidth 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Board.getHeight 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Board.getPlayer 0
+push argument 0
+pop pointer 0
+push this 3
+return
+function Board.dispose 3
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+push this 0
+push this 1
+call Math.multiply 2
+pop local 1
+label WHILE_EXP0
+push local 0
+push local 1
+lt
+not
+if-goto WHILE_END0
+push local 0
+push this 2
+add
+pop pointer 1
+push that 0
+pop local 2
+push local 2
+call Cell.dispose 1
+pop temp 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push this 2
+call Array.dispose 1
+pop temp 0
+push this 3
+call Player.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_Cell_VM string = `function Cell.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push pointer 0
+return
+function Cell.getTypeOf 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Cell.getHasBox 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Cell.setHasBox 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 1
+push constant 0
+return
+function Cell.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_CellType_VM string = `function CellType.init 0
+push constant 0
+pop static 0
+push constant 1
+pop static 1
+push constant 2
+pop static 2
+push constant 0
+return
+function CellType.CellTypeNone 0
+push static 0
+return
+function CellType.CellTypeGoal 0
+push static 1
+return
+function CellType.CellTypeWall 0
+push static 2
+return
+`
+
+const Sokoban_Controller_VM string = `function Controller.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push constant 0
+not
+pop this 1
+push constant 0
+pop this 2
+push pointer 0
+return
+function Controller.startNewGame 1
+push argument 0
+pop pointer 0
+push this 0
+call Model.getLevelManager 1
+pop local 0
+push local 0
+call LevelManager.reset 1
+pop temp 0
+push pointer 0
+call Controller.tryStartNextLevel 1
+pop temp 0
+push constant 0
+return
+function Controller.handleInput 1
+push argument 0
+pop pointer 0
+call Keyboard.keyPressed 0
+pop local 0
+push local 0
+push constant 0
+eq
+not
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+call Direction.U 0
+eq
+push local 0
+call Direction.D 0
+eq
+or
+push local 0
+call Direction.L 0
+eq
+or
+push local 0
+call Direction.R 0
+eq
+or
+push local 0
+push constant 32
+eq
+or
+push local 0
+push constant 82
+eq
+or
+push local 0
+push constant 83
+eq
+or
+push local 0
+push constant 140
+eq
+or
+not
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 0
+pop this 2
+push constant 0
+return
+label IF_FALSE1
+push local 0
+push constant 140
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+pop this 1
+label IF_FALSE2
+push this 2
+push local 0
+eq
+not
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push this 0
+call Model.getState 1
+call State.StateGameComplete 0
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 0
+push constant 32
+eq
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push pointer 0
+call Controller.startNewGame 1
+pop temp 0
+label IF_FALSE5
+label IF_FALSE4
+push this 0
+call Model.getState 1
+call State.StateLevelComplete 0
+eq
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push local 0
+push constant 32
+eq
+if-goto IF_TRUE7
+goto IF_FALSE7
+label IF_TRUE7
+push pointer 0
+call Controller.tryStartNextLevel 1
+pop temp 0
+label IF_FALSE7
+label IF_FALSE6
+push this 0
+call Model.getState 1
+call State.StatePlaying 0
+eq
+if-goto IF_TRUE8
+goto IF_FALSE8
+label IF_TRUE8
+push local 0
+call Direction.U 0
+eq
+push local 0
+call Direction.D 0
+eq
+or
+push local 0
+call Direction.L 0
+eq
+or
+push local 0
+call Direction.R 0
+eq
+or
+if-goto IF_TRUE9
+goto IF_FALSE9
+label IF_TRUE9
+push pointer 0
+push local 0
+call Controller.tryMovePlayer 2
+pop temp 0
+label IF_FALSE9
+push local 0
+push constant 82
+eq
+if-goto IF_TRUE10
+goto IF_FALSE10
+label IF_TRUE10
+push pointer 0
+call Controller.restartLevel 1
+pop temp 0
+label IF_FALSE10
+push local 0
+push constant 83
+eq
+if-goto IF_TRUE11
+goto IF_FALSE11
+label IF_TRUE11
+label IF_FALSE11
+label IF_FALSE8
+label IF_FALSE3
+push local 0
+pop this 2
+goto IF_END0
+label IF_FALSE0
+push constant 0
+pop this 2
+label IF_END0
+push constant 0
+return
+function Controller.tryMovePlayer 10
+push argument 0
+pop pointer 0
+push this 0
+call Model.getBoard 1
+pop local 0
+push local 0
+call Board.getPlayer 1
+pop local 1
+push local 1
+call Player.getX 1
+pop local 2
+push local 1
+call Player.getY 1
+pop local 3
+push local 2
+pop local 4
+push local 3
+pop local 5
+push local 4
+pop local 6
+push local 5
+pop local 7
+push argument 1
+call Direction.U 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 5
+push constant 1
+sub
+pop local 5
+push local 7
+push constant 2
+sub
+pop local 7
+label IF_FALSE0
+push argument 1
+call Direction.D 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 5
+push constant 1
+add
+pop local 5
+push local 7
+push constant 2
+add
+pop local 7
+label IF_FALSE1
+push argument 1
+call Direction.L 0
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 4
+push constant 1
+sub
+pop local 4
+push local 6
+push constant 2
+sub
+pop local 6
+label IF_FALSE2
+push argument 1
+call Direction.R 0
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push local 4
+push constant 1
+add
+pop local 4
+push local 6
+push constant 2
+add
+pop local 6
+label IF_FALSE3
+push local 0
+push local 4
+push local 5
+call Board.getCell 3
+pop local 8
+push local 8
+call Cell.getTypeOf 1
+call CellType.CellTypeWall 0
+eq
+not
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 8
+call Cell.getHasBox 1
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push local 0
+push local 6
+push local 7
+call Board.getCell 3
+pop local 9
+push local 9
+call Cell.getTypeOf 1
+call CellType.CellTypeWall 0
+eq
+not
+push local 9
+call Cell.getHasBox 1
+not
+and
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push local 8
+push constant 0
+call Cell.setHasBox 2
+pop temp 0
+push local 9
+push constant 0
+not
+call Cell.setHasBox 2
+pop temp 0
+push local 1
+push local 4
+push local 5
+call Player.moveTo 3
+pop temp 0
+push local 0
+call Board.isComplete 1
+if-goto IF_TRUE7
+goto IF_FALSE7
+label IF_TRUE7
+push this 0
+call State.StateLevelComplete 0
+call Model.setState 2
+pop temp 0
+label IF_FALSE7
+label IF_FALSE6
+goto IF_END5
+label IF_FALSE5
+push local 1
+push local 4
+push local 5
+call Player.moveTo 3
+pop temp 0
+label IF_END5
+label IF_FALSE4
+push constant 0
+return
+function Controller.tryStartNextLevel 3
+push argument 0
+pop pointer 0
+push this 0
+call Model.getLevelManager 1
+pop local 0
+push local 0
+call LevelManager.hasNextLevel 1
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+call LevelManager.progressToNextLevel 1
+pop temp 0
+push local 0
+call LevelManager.getCurrentLevel 1
+pop local 1
+push local 1
+call Level.getWidth 1
+push local 1
+call Level.getHeight 1
+push local 1
+call Level.getMapData 1
+call Board.new 3
+pop local 2
+push this 0
+push local 2
+call Model.setBoard 2
+pop temp 0
+push this 0
+call State.StatePlaying 0
+call Model.setState 2
+pop temp 0
+goto IF_END0
+label IF_FALSE0
+push this 0
+call State.StateGameComplete 0
+call Model.setState 2
+pop temp 0
+label IF_END0
+push constant 0
+return
+function Controller.restartLevel 3
+push argument 0
+pop pointer 0
+push this 0
+call Model.getLevelManager 1
+pop local 0
+push local 0
+call LevelManager.getCurrentLevel 1
+pop local 1
+push local 1
+call Level.getWidth 1
+push local 1
+call Level.getHeight 1
+push local 1
+call Level.getMapData 1
+call Board.new 3
+pop local 2
+push this 0
+push local 2
+call Model.setBoard 2
+pop temp 0
+push this 0
+call State.StatePlaying 0
+call Model.setState 2
+pop temp 0
+push constant 0
+return
+function Controller.isRunning 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Controller.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_Direction_VM string = `function Direction.init 0
+push constant 131
+pop static 0
+push constant 133
+pop static 1
+push constant 130
+pop static 2
+push constant 132
+pop static 3
+push constant 0
+return
+function Direction.U 0
+push static 0
+return
+function Direction.D 0
+push static 1
+return
+function Direction.L 0
+push static 2
+return
+function Direction.R 0
+push static 3
+return
+`
+
+const Sokoban_Level_VM string = `function Level.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push argument 2
+pop this 2
+push pointer 0
+return
+function Level.getWidth 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Level.getHeight 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Level.getMapData 0
+push argument 0
+pop pointer 0
+push this 2
+return
+function Level.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_LevelManager_VM string = `function LevelManager.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+push constant 0
+pop this 0
+push constant 10
+pop this 1
+push this 1
+push constant 1
+add
+call Array.new 1
+pop this 2
+push constant 0
+push this 2
+add
+push constant 0
+push constant 0
+push constant 0
+call String.new 1
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 1
+push this 2
+add
+push constant 8
+push constant 8
+push constant 64
+call String.new 1
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 2
+push this 2
+add
+push constant 9
+push constant 9
+push constant 81
+call String.new 1
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 3
+push this 2
+add
+push constant 6
+push constant 8
+push constant 48
+call String.new 1
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 42
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 4
+push this 2
+add
+push constant 8
+push constant 8
+push constant 64
+call String.new 1
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 5
+push this 2
+add
+push constant 8
+push constant 7
+push constant 56
+call String.new 1
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 6
+push this 2
+add
+push constant 8
+push constant 7
+push constant 56
+call String.new 1
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 42
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 7
+push this 2
+add
+push constant 8
+push constant 8
+push constant 64
+call String.new 1
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 8
+push this 2
+add
+push constant 8
+push constant 7
+push constant 56
+call String.new 1
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 42
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 9
+push this 2
+add
+push constant 9
+push constant 7
+push constant 63
+call String.new 1
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 10
+push this 2
+add
+push constant 7
+push constant 8
+push constant 56
+call String.new 1
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 36
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 64
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+push constant 35
+call String.appendChar 2
+call Level.new 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push pointer 0
+return
+function LevelManager.getCurrentLevelNumber 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function LevelManager.getFinalLevelNumber 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function LevelManager.getCurrentLevel 0
+push argument 0
+pop pointer 0
+push this 0
+push this 2
+add
+pop pointer 1
+push that 0
+return
+function LevelManager.hasNextLevel 0
+push argument 0
+pop pointer 0
+push this 0
+push this 1
+lt
+return
+function LevelManager.progressToNextLevel 0
+push argument 0
+pop pointer 0
+push this 0
+push constant 1
+add
+pop this 0
+push constant 0
+return
+function LevelManager.reset 0
+push argument 0
+pop pointer 0
+push constant 0
+pop this 0
+push constant 0
+return
+function LevelManager.dispose 0
+push argument 0
+pop pointer 0
+push this 2
+call Array.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_Main_VM string = `function Main.main 4
+call CellType.init 0
+pop temp 0
+call Direction.init 0
+pop temp 0
+call State.init 0
+pop temp 0
+call Model.new 0
+pop local 1
+push local 1
+call View.new 1
+pop local 2
+push local 1
+call Controller.new 1
+pop local 3
+push local 3
+call Controller.startNewGame 1
+pop temp 0
+label WHILE_EXP0
+push local 3
+call Controller.isRunning 1
+not
+if-goto WHILE_END0
+push local 3
+call Controller.handleInput 1
+pop temp 0
+push local 2
+call View.draw 1
+pop temp 0
+push local 1
+call Model.update 1
+pop temp 0
+push constant 10
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+push local 1
+call Model.dispose 1
+pop temp 0
+push local 2
+call View.dispose 1
+pop temp 0
+push local 3
+call Controller.dispose 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_Model_VM string = `function Model.new 0
+push constant 5
+call Memory.alloc 1
+pop pointer 0
+call LevelManager.new 0
+pop this 0
+call State.StatePlaying 0
+pop this 2
+push constant 0
+pop this 3
+push constant 0
+pop this 4
+push pointer 0
+return
+function Model.update 0
+push argument 0
+pop pointer 0
+push this 3
+push constant 1
+add
+pop this 3
+push this 3
+push constant 20
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+pop this 3
+label IF_FALSE0
+push this 4
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 0
+pop this 4
+label IF_FALSE1
+push constant 0
+return
+function Model.getLevelManager 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Model.getBoard 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Model.getState 0
+push argument 0
+pop pointer 0
+push this 2
+return
+function Model.getTickAccumulator 0
+push argument 0
+pop pointer 0
+push this 3
+return
+function Model.isScreenDirty 0
+push argument 0
+pop pointer 0
+push this 4
+return
+function Model.setBoard 0
+push argument 0
+pop pointer 0
+push this 1
+push constant 0
+eq
+not
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 1
+call Board.dispose 1
+pop temp 0
+label IF_FALSE0
+push argument 1
+pop this 1
+push constant 0
+return
+function Model.setState 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 2
+push constant 0
+not
+pop this 4
+push constant 0
+return
+function Model.dispose 0
+push argument 0
+pop pointer 0
+push this 0
+call LevelManager.dispose 1
+pop temp 0
+push this 1
+call Board.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_Player_VM string = `function Player.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push pointer 0
+return
+function Player.getX 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Player.getY 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Player.moveTo 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 0
+push argument 2
+pop this 1
+push constant 0
+return
+function Player.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_Sprites_VM string = `function Sprites.drawBox 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 4080
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 4080
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawClear 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawGoal 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 16380
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 24582
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 24582
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 16380
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawGoalBox 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 16380
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 24582
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 20466
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 20466
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 24582
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 16380
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawGoalPlayer 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 16380
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 24582
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 18402
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 20466
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 19890
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 23994
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 24570
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 19410
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 19506
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 18402
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 24582
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 16380
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoA1 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 4096
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 1024
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 512
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 7936
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 16128
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 256
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 512
+neg
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoA2 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 2048
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 16384
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 28928
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 256
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 512
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 512
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoA3 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 1024
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 16384
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 8192
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 20480
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 2048
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 6144
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 10240
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 16384
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 1024
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoB1 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 15879
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 121
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 49
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 2097
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 7200
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 7199
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 7193
+neg
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoB2 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 7185
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 7185
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 2097
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 57
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 125
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 15872
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoB3 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 24320
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 17412
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 17423
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 17435
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 15297
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 17455
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 17448
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 17412
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 17408
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoC1 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 4344
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 14584
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 775
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 32505
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 16371
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 8179
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 4083
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoC2 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 8179
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 16371
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 32505
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 775
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 30968
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 6392
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoC3 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 32244
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 4116
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 4116
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 4116
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 4215
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 4116
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 4116
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 4116
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 32244
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoD1 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 31776
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 28680
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 24580
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 24708
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 15934
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 15934
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 15934
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoD2 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 15934
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 15934
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 24708
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 24580
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 28680
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 31776
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 8
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 8
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 2360
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 2376
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 2376
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 3640
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 2048
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 1792
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoD3 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 7087
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 5203
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 5205
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 5209
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 2991
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 5201
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 5201
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 4753
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 4369
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoE1 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 255
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 511
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 1023
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 1999
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 1999
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 1023
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 31745
+neg
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoE2 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 30721
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 28785
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 12337
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 12289
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 6145
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 7169
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoE3 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 8388
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 16709
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 16709
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 16709
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 14523
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 16709
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 16709
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 16709
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 24381
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoF1 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 1986
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 1986
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 1986
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 1921
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 3969
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 3977
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 3849
+neg
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoF2 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 3849
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 3841
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 1537
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 1537
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 1053
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 1053
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoF3 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 30947
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 1300
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 1284
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 1284
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 15555
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 17666
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 17668
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 17684
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 14564
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoG1 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 248
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 248
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 249
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 251
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 123
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 127
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 127
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoG2 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 127
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 126
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 254
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 252
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 248
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 248
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawLogoG3 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 63
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 14
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 17
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 17
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 25
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 21
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 19
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 17
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 17
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 14
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 63
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawPlayer 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 2016
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 4080
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 3504
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 7608
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 8184
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 3024
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 3120
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 2016
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Sprites.drawWall 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 32766
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 19114
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 21842
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 19114
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 21842
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 19114
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 21842
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 19114
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 21842
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 19114
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 21842
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 16386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 32766
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+`
+
+const Sokoban_State_VM string = `function State.init 0
+push constant 0
+pop static 0
+push constant 1
+pop static 1
+push constant 2
+pop static 2
+push constant 0
+return
+function State.StatePlaying 0
+push static 0
+return
+function State.StateLevelComplete 0
+push static 1
+return
+function State.StateGameComplete 0
+push static 2
+return
+`
+
+const Sokoban_Utils_VM string = `function Utils.mod 1
+push argument 0
+push argument 1
+call Math.divide 2
+pop local 0
+push argument 0
+push local 0
+push argument 1
+call Math.multiply 2
+sub
+return
+`
+
+const Sokoban_View_VM string = `function View.new 0
+push constant 10
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push constant 14
+call String.new 1
+push constant 45
+call String.appendChar 2
+push constant 45
+call String.appendChar 2
+push constant 45
+call String.appendChar 2
+push constant 67
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 110
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 45
+call String.appendChar 2
+push constant 45
+call String.appendChar 2
+push constant 45
+call String.appendChar 2
+pop this 1
+push constant 14
+call String.new 1
+push constant 67
+call String.appendChar 2
+push constant 117
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 77
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+pop this 2
+push constant 14
+call String.new 1
+push constant 82
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 82
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+pop this 3
+push constant 14
+call String.new 1
+push constant 69
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 112
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 81
+call String.appendChar 2
+push constant 117
+call String.appendChar 2
+push constant 105
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+pop this 4
+push constant 14
+call String.new 1
+push constant 83
+call String.appendChar 2
+push constant 112
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 78
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 120
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+pop this 5
+push constant 14
+call String.new 1
+push constant 83
+call String.appendChar 2
+push constant 112
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 82
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+pop this 6
+push constant 14
+call String.new 1
+push constant 76
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 86
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 76
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 67
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 77
+call String.appendChar 2
+push constant 80
+call String.appendChar 2
+push constant 76
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 84
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+pop this 7
+push constant 14
+call String.new 1
+push constant 71
+call String.appendChar 2
+push constant 65
+call String.appendChar 2
+push constant 77
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 67
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 77
+call String.appendChar 2
+push constant 80
+call String.appendChar 2
+push constant 76
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 84
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 33
+call String.appendChar 2
+pop this 8
+push constant 16
+call String.new 1
+push constant 67
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 78
+call String.appendChar 2
+push constant 71
+call String.appendChar 2
+push constant 82
+call String.appendChar 2
+push constant 65
+call String.appendChar 2
+push constant 84
+call String.appendChar 2
+push constant 85
+call String.appendChar 2
+push constant 76
+call String.appendChar 2
+push constant 65
+call String.appendChar 2
+push constant 84
+call String.appendChar 2
+push constant 73
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 78
+call String.appendChar 2
+push constant 83
+call String.appendChar 2
+push constant 33
+call String.appendChar 2
+pop this 9
+push pointer 0
+return
+function View.draw 4
+push argument 0
+pop pointer 0
+push this 0
+call Model.getBoard 1
+pop local 2
+push local 2
+call Board.getPlayer 1
+pop local 3
+push this 0
+call Model.isScreenDirty 1
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push constant 0
+push constant 0
+push constant 511
+push constant 255
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE0
+push pointer 0
+call View.drawLogo 1
+pop temp 0
+push this 0
+call Model.getState 1
+call State.StatePlaying 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push pointer 0
+call View.drawBoard 1
+pop temp 0
+push pointer 0
+call View.drawLevelInfo 1
+pop temp 0
+push constant 17
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 1
+call Output.printString 1
+pop temp 0
+push constant 19
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 2
+call Output.printString 1
+pop temp 0
+push constant 20
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 3
+call Output.printString 1
+pop temp 0
+push constant 21
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 4
+call Output.printString 1
+pop temp 0
+label IF_FALSE1
+push this 0
+call Model.getState 1
+call State.StateLevelComplete 0
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push pointer 0
+call View.drawBoard 1
+pop temp 0
+push pointer 0
+call View.drawLevelInfo 1
+pop temp 0
+push this 0
+call Model.getTickAccumulator 1
+push constant 10
+lt
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push constant 12
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 7
+call Output.printString 1
+pop temp 0
+goto IF_END3
+label IF_FALSE3
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push constant 384
+push constant 133
+push constant 494
+push constant 142
+call Screen.drawRectangle 4
+pop temp 0
+label IF_END3
+push constant 17
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 1
+call Output.printString 1
+pop temp 0
+push constant 19
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 5
+call Output.printString 1
+pop temp 0
+push constant 21
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 4
+call Output.printString 1
+pop temp 0
+label IF_FALSE2
+push this 0
+call Model.getState 1
+call State.StateGameComplete 0
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push constant 10
+push constant 16
+call Output.moveCursor 2
+pop temp 0
+push this 8
+call Output.printString 1
+pop temp 0
+push this 0
+call Model.getTickAccumulator 1
+push constant 10
+lt
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push constant 12
+push constant 15
+call Output.moveCursor 2
+pop temp 0
+push this 9
+call Output.printString 1
+pop temp 0
+push pointer 0
+push constant 0
+call View.drawGameCompleteBorder 2
+pop temp 0
+goto IF_END5
+label IF_FALSE5
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push constant 120
+push constant 133
+push constant 244
+push constant 141
+call Screen.drawRectangle 4
+pop temp 0
+push pointer 0
+push constant 0
+not
+call View.drawGameCompleteBorder 2
+pop temp 0
+label IF_END5
+push constant 17
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 1
+call Output.printString 1
+pop temp 0
+push constant 19
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 6
+call Output.printString 1
+pop temp 0
+push constant 21
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push this 4
+call Output.printString 1
+pop temp 0
+label IF_FALSE4
+push constant 0
+return
+function View.drawLogo 0
+push argument 0
+pop pointer 0
+push constant 56
+push constant 0
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoA1 1
+pop temp 0
+push constant 57
+push constant 0
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoB1 1
+pop temp 0
+push constant 58
+push constant 0
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoC1 1
+pop temp 0
+push constant 59
+push constant 0
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoD1 1
+pop temp 0
+push constant 60
+push constant 0
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoE1 1
+pop temp 0
+push constant 61
+push constant 0
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoF1 1
+pop temp 0
+push constant 62
+push constant 0
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoG1 1
+pop temp 0
+push constant 56
+push constant 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoA2 1
+pop temp 0
+push constant 57
+push constant 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoB2 1
+pop temp 0
+push constant 58
+push constant 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoC2 1
+pop temp 0
+push constant 59
+push constant 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoD2 1
+pop temp 0
+push constant 60
+push constant 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoE2 1
+pop temp 0
+push constant 61
+push constant 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoF2 1
+pop temp 0
+push constant 62
+push constant 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoG2 1
+pop temp 0
+push constant 56
+push constant 2
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoA3 1
+pop temp 0
+push constant 57
+push constant 2
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoB3 1
+pop temp 0
+push constant 58
+push constant 2
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoC3 1
+pop temp 0
+push constant 59
+push constant 2
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoD3 1
+pop temp 0
+push constant 60
+push constant 2
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoE3 1
+pop temp 0
+push constant 61
+push constant 2
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoF3 1
+pop temp 0
+push constant 62
+push constant 2
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawLogoG3 1
+pop temp 0
+push constant 0
+return
+function View.drawBoard 9
+push argument 0
+pop pointer 0
+push this 0
+call Model.getBoard 1
+pop local 0
+push constant 0
+pop local 1
+push constant 0
+pop local 2
+push local 0
+call Board.getWidth 1
+pop local 3
+push local 0
+call Board.getHeight 1
+pop local 4
+push constant 22
+push local 3
+sub
+push constant 2
+call Math.divide 2
+push constant 1
+add
+pop local 5
+push constant 14
+push local 4
+sub
+push constant 2
+call Math.divide 2
+push constant 1
+add
+pop local 6
+push local 0
+call Board.getPlayer 1
+pop local 7
+label WHILE_EXP0
+push local 2
+push local 4
+lt
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 1
+push local 3
+lt
+not
+if-goto WHILE_END1
+push local 0
+push local 1
+push local 2
+call Board.getCell 3
+pop local 8
+push local 7
+call Player.getX 1
+push local 1
+eq
+push local 7
+call Player.getY 1
+push local 2
+eq
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 8
+call Cell.getTypeOf 1
+call CellType.CellTypeGoal 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 5
+push local 1
+add
+push local 6
+push local 2
+add
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawGoalPlayer 1
+pop temp 0
+goto IF_END1
+label IF_FALSE1
+push local 5
+push local 1
+add
+push local 6
+push local 2
+add
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawPlayer 1
+pop temp 0
+label IF_END1
+goto IF_END0
+label IF_FALSE0
+push local 8
+call Cell.getTypeOf 1
+call CellType.CellTypeNone 0
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 8
+call Cell.getHasBox 1
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push local 5
+push local 1
+add
+push local 6
+push local 2
+add
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawBox 1
+pop temp 0
+goto IF_END3
+label IF_FALSE3
+push local 5
+push local 1
+add
+push local 6
+push local 2
+add
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawClear 1
+pop temp 0
+label IF_END3
+label IF_FALSE2
+push local 8
+call Cell.getTypeOf 1
+call CellType.CellTypeGoal 0
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 8
+call Cell.getHasBox 1
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push local 5
+push local 1
+add
+push local 6
+push local 2
+add
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawGoalBox 1
+pop temp 0
+goto IF_END5
+label IF_FALSE5
+push local 5
+push local 1
+add
+push local 6
+push local 2
+add
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawGoal 1
+pop temp 0
+label IF_END5
+label IF_FALSE4
+push local 8
+call Cell.getTypeOf 1
+call CellType.CellTypeWall 0
+eq
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push local 5
+push local 1
+add
+push local 6
+push local 2
+add
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawWall 1
+pop temp 0
+label IF_FALSE6
+label IF_END0
+push local 1
+push constant 1
+add
+pop local 1
+goto WHILE_EXP1
+label WHILE_END1
+push local 2
+push constant 1
+add
+pop local 2
+push constant 0
+pop local 1
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function View.drawLevelInfo 6
+push argument 0
+pop pointer 0
+push this 0
+call Model.getLevelManager 1
+pop local 0
+push constant 14
+call String.new 1
+push constant 76
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 88
+call String.appendChar 2
+push constant 88
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 102
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 89
+call String.appendChar 2
+push constant 89
+call String.appendChar 2
+pop local 1
+push local 0
+call LevelManager.getCurrentLevelNumber 1
+pop local 2
+push constant 2
+call Array.new 1
+pop local 3
+push constant 0
+push local 3
+add
+push local 2
+push constant 10
+call Math.divide 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 1
+push local 3
+add
+push local 2
+push constant 10
+call Utils.mod 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 1
+push constant 6
+push constant 48
+push constant 0
+push local 3
+add
+pop pointer 1
+push that 0
+add
+call String.setCharAt 3
+pop temp 0
+push local 1
+push constant 7
+push constant 48
+push constant 1
+push local 3
+add
+pop pointer 1
+push that 0
+add
+call String.setCharAt 3
+pop temp 0
+push local 0
+call LevelManager.getFinalLevelNumber 1
+pop local 4
+push constant 2
+call Array.new 1
+pop local 5
+push constant 0
+push local 5
+add
+push local 4
+push constant 10
+call Math.divide 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 1
+push local 5
+add
+push local 4
+push constant 10
+call Utils.mod 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 1
+push constant 12
+push constant 48
+push constant 0
+push local 5
+add
+pop pointer 1
+push that 0
+add
+call String.setCharAt 3
+pop temp 0
+push local 1
+push constant 13
+push constant 48
+push constant 1
+push local 5
+add
+pop pointer 1
+push that 0
+add
+call String.setCharAt 3
+pop temp 0
+push constant 7
+push constant 48
+call Output.moveCursor 2
+pop temp 0
+push local 1
+call Output.printString 1
+pop temp 0
+push local 1
+call String.dispose 1
+pop temp 0
+push local 3
+call Array.dispose 1
+pop temp 0
+push local 5
+call Array.dispose 1
+pop temp 0
+push constant 0
+return
+function View.drawGameCompleteBorder 2
+push argument 0
+pop pointer 0
+push constant 1
+pop local 0
+push constant 1
+pop local 1
+label WHILE_EXP0
+push local 1
+push constant 15
+lt
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+push constant 23
+lt
+not
+if-goto WHILE_END1
+push local 0
+push constant 1
+eq
+push local 0
+push constant 22
+eq
+or
+push local 1
+push constant 1
+eq
+or
+push local 1
+push constant 14
+eq
+or
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push argument 1
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 0
+push local 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawPlayer 1
+pop temp 0
+goto IF_END1
+label IF_FALSE1
+push local 0
+push local 1
+push constant 512
+call Math.multiply 2
+add
+call Sprites.drawClear 1
+pop temp 0
+label IF_END1
+label IF_FALSE0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP1
+label WHILE_END1
+push local 1
+push constant 1
+add
+pop local 1
+push constant 1
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function View.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
 push constant 0
 return
 `

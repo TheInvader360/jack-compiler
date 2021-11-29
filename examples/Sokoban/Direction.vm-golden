@@ -1,0 +1,23 @@
+function Direction.init 0
+push constant 131
+pop static 0
+push constant 133
+pop static 1
+push constant 130
+pop static 2
+push constant 132
+pop static 3
+push constant 0
+return
+function Direction.U 0
+push static 0
+return
+function Direction.D 0
+push static 1
+return
+function Direction.L 0
+push static 2
+return
+function Direction.R 0
+push static 3
+return

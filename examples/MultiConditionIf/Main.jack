@@ -1,0 +1,10 @@
+class Main {
+    function void main () {
+        var char key;
+        let key = Keyboard.keyPressed();
+        if ((key = Direction.U()) | (key = Direction.D()) | (key = Direction.L()) | (key = Direction.R())) {
+        }
+        return;
+    }
+}
+
