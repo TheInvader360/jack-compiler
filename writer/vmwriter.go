@@ -53,10 +53,9 @@ func (vmw *VMWriter) WriteArithmetic(command string) {
 		command = "gt"
 	}
 	// "neg" and "not" commands remain unaltered
-	line := fmt.Sprintf("%s", command)
-	vmw.Code += line + "\n"
+	vmw.Code += command + "\n"
 	if vmw.debug {
-		fmt.Println("VMWriter.WriteArithmetic()", line)
+		fmt.Println("VMWriter.WriteArithmetic()", command)
 	}
 }
 
