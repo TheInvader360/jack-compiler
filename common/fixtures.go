@@ -8558,51 +8558,6 @@ const SquareExpressionless_SquareGame_XML string = `<class>
 </class>
 `
 
-// ----- E_XML -----
-
-const HelloWorld_MainE_XML string = `<class>
-<keyword> class </keyword>
-<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> Main </identifier>
-<symbol> { </symbol>
-<subroutineDec>
-<keyword> function </keyword>
-<keyword> void </keyword>
-<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> main </identifier>
-<symbol> ( </symbol>
-<parameterList>
-</parameterList>
-<symbol> ) </symbol>
-<subroutineBody>
-<symbol> { </symbol>
-<statements>
-<doStatement>
-<keyword> do </keyword>
-<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> Output </identifier>
-<symbol> . </symbol>
-<identifier category="TODO" action="TODO" kind="TODO" index="TODO"> printString </identifier>
-<symbol> ( </symbol>
-<expressionList>
-<expression>
-<term>
-<stringConstant> Hello World </stringConstant>
-</term>
-</expression>
-</expressionList>
-<symbol> ) </symbol>
-<symbol> ; </symbol>
-</doStatement>
-<returnStatement>
-<keyword> return </keyword>
-<symbol> ; </symbol>
-</returnStatement>
-</statements>
-<symbol> } </symbol>
-</subroutineBody>
-</subroutineDec>
-<symbol> } </symbol>
-</class>
-`
-
 // ----- VM -----
 
 const Average_Main_VM string = `function Main.main 4

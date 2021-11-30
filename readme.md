@@ -24,3 +24,21 @@ go run main.go -path=examples/Sokoban
 ```
 
 Translates all .jack files in the specified directory and exports them all to the same directory with the same base filename but a .vm extension
+
+## Options
+
+You can use these runtime flags to modify the compiler's behaviour
+
+```bash
+-comments
+ enable comments in vm output
+
+-debug
+ enable debug terminal output
+
+-path=[string]
+ jack source path (default "examples/HelloWorld")
+
+-xml
+ include intermediate xml files in output
+```

@@ -24,13 +24,13 @@ func TestEverything(t *testing.T) {
 	cst.Define("f1", "char", SymbolKindField)
 	assert.Equal(t, 1, cst.GetVarCount(SymbolKindField))
 	assert.Equal(t, "char", cst.GetTypeOf("f1"))
-	assert.Equal(t, SymbolKindField, cst.GetKindOf("f1"))
+	assert.Equal(t, SymbolKindThis, cst.GetKindOf("f1"))
 	assert.Equal(t, 0, cst.GetIndexOf("f1"))
 
 	cst.Define("f2", "SomeClassName", SymbolKindField)
 	assert.Equal(t, 2, cst.GetVarCount(SymbolKindField))
 	assert.Equal(t, "SomeClassName", cst.GetTypeOf("f2"))
-	assert.Equal(t, SymbolKindField, cst.GetKindOf("f2"))
+	assert.Equal(t, SymbolKindThis, cst.GetKindOf("f2"))
 	assert.Equal(t, 1, cst.GetIndexOf("f2"))
 
 	cst.Define("a1", "boolean", SymbolKindArgument)

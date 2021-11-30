@@ -3,19 +3,19 @@ go test ./... --cover
 echo
 
 echo "Compiling examples..."
-go run main.go -path=examples/Array
-go run main.go -path=examples/Average
-go run main.go -path=examples/ComplexArrays
-go run main.go -path=examples/ConvertToBin
-go run main.go -path=examples/HelloWorld
-go run main.go -path=examples/MultiConditionIf
-go run main.go -path=examples/Pong
-go run main.go -path=examples/Seven
-go run main.go -path=examples/SimpleIf
-go run main.go -path=examples/SimpleWhile
-go run main.go -path=examples/Sokoban
-go run main.go -path=examples/Square
-go run main.go -path=examples/SquareExpressionless
+go run main.go -path=examples/Array -xml
+go run main.go -path=examples/Average -xml
+go run main.go -path=examples/ComplexArrays -xml
+go run main.go -path=examples/ConvertToBin -xml
+go run main.go -path=examples/HelloWorld -xml
+go run main.go -path=examples/MultiConditionIf -xml
+go run main.go -path=examples/Pong -xml
+go run main.go -path=examples/Seven -xml
+go run main.go -path=examples/SimpleIf -xml
+go run main.go -path=examples/SimpleWhile -xml
+go run main.go -path=examples/Sokoban -xml
+go run main.go -path=examples/Square -xml
+go run main.go -path=examples/SquareExpressionless -xml
 echo
 
 cd ../nand2tetris/tools/

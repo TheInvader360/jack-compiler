@@ -9,6 +9,7 @@ const (
 	SymbolKindArgument SymbolKind = "argument"
 	SymbolKindStatic   SymbolKind = "static"
 	SymbolKindField    SymbolKind = "field"
+	SymbolKindThis     SymbolKind = "this"
 	SymbolKindUnknown  SymbolKind = ""
 )
 
@@ -78,6 +79,7 @@ func (st *SymbolTable) getVarCount(kind SymbolKind) int {
 
 // GetTypeOf - Returns the type of the given identifier
 func (cst *CombinedSymbolTable) GetTypeOf(identifierName string) string {
+
 	if symbol, ok := cst.classScopeSymbolTable[identifierName]; ok {
 		return symbol.typeOf
 	}
@@ -90,14 +92,18 @@ func (cst *CombinedSymbolTable) GetTypeOf(identifierName string) string {
 
 // GetKindOf - Returns the kind of the given identifier
 func (cst *CombinedSymbolTable) GetKindOf(identifierName string) SymbolKind {
+	kind := SymbolKindUnknown
 	if symbol, ok := cst.classScopeSymbolTable[identifierName]; ok {
-		return symbol.kindOf
+		kind = symbol.kindOf
 	}
 	if symbol, ok := cst.subroutineScopeSymbolTable[identifierName]; ok {
-		return symbol.kindOf
+		kind = symbol.kindOf
+	}
+	if kind == SymbolKindField {
+		kind = SymbolKindThis
 	}
 
-	return SymbolKindUnknown
+	return kind
 }
 
 // GetIndexOf - Returns the index of the given identifier

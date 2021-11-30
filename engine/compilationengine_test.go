@@ -32,23 +32,7 @@ func TestCompileClassXML(t *testing.T) {
 	}
 	for _, tc := range tests {
 		engine := NewCompilationEngine(tc.tokens, true, true)
-		tree, _, _ := engine.CompileClass()
-		assert.Equal(t, tc.expectedXML, tree)
-	}
-}
-
-func TestCompileClassAsExtendedXML(t *testing.T) {
-	type test struct {
-		tokens      []tokenizer.Token
-		expectedXML string
-	}
-	tests := []test{
-		{tokens: tokenizer.HelloWorld_Main_Tokens(t), expectedXML: common.HelloWorld_MainE_XML},
-		//TODO: more test cases
-	}
-	for _, tc := range tests {
-		engine := NewCompilationEngine(tc.tokens, false, false)
-		_, tree, _ := engine.CompileClass()
+		tree, _ := engine.CompileClass()
 		assert.Equal(t, tc.expectedXML, tree)
 	}
 }
@@ -91,7 +75,7 @@ func TestCompileClassVM(t *testing.T) {
 	for _, tc := range tests {
 		tokens := tokenizer.Tokenize([]byte(tc.jack))
 		engine := NewCompilationEngine(tokens, false, false)
-		_, _, vmCode := engine.CompileClass()
+		_, vmCode := engine.CompileClass()
 		assert.Equal(t, tc.expectedVM, vmCode)
 	}
 }
@@ -118,9 +102,9 @@ func TestCompileVarDec(t *testing.T) {
 				{Name: "keyword", Value: "int", Children: []Node{}},
 				{Name: "identifier", Value: "a", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: ",", Children: []Node{}},
-				{Name: "identifier", Value: "b", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "b", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "local", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: ",", Children: []Node{}},
-				{Name: "identifier", Value: "c", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "c", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "local", IdentifierIndex: "TODO"},
 				{Name: "symbol", Value: ";", Children: []Node{}},
 			}},
 		},

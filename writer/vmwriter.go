@@ -13,7 +13,7 @@ func NewVMWriter(debug bool) *VMWriter {
 }
 
 // WritePush - writes a vm push command
-func (vmw *VMWriter) WritePush(segment Segment, index int) {
+func (vmw *VMWriter) WritePush(segment string, index int) {
 	line := fmt.Sprintf("push %s %d", segment, index)
 	vmw.Code += line + "\n"
 	if vmw.debug {
@@ -22,7 +22,7 @@ func (vmw *VMWriter) WritePush(segment Segment, index int) {
 }
 
 // WritePop - writes a vm pop command
-func (vmw *VMWriter) WritePop(segment Segment, index int) {
+func (vmw *VMWriter) WritePop(segment string, index int) {
 	line := fmt.Sprintf("pop %s %d", segment, index)
 	vmw.Code += line + "\n"
 	if vmw.debug {

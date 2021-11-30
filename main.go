@@ -19,6 +19,7 @@ func main() {
 	path := flag.String("path", "examples/HelloWorld", "jack source path")
 	debug := flag.Bool("debug", false, "enable debug terminal output")
 	vmComments := flag.Bool("comments", false, "enable comments in vm output")
+	xml := flag.Bool("xml", false, "include intermediate xml files in output")
 	flag.Parse()
 
 	fileInfo, err := os.Stat(*path)
@@ -45,12 +46,14 @@ func main() {
 			handler.FatalError(errors.Wrap(err, fmt.Sprintf("Can't read file: %s", file)))
 
 			tokens := tokenizer.Tokenize(jackData)
-			writeFile(tokenizer.AsXML(tokens), strings.Replace(file, ".jack", "T.xml", 1))
-
 			engine := engine.NewCompilationEngine(tokens, *debug, *vmComments)
-			tree, extendedTree, vmCode := engine.CompileClass()
-			writeFile(tree, strings.Replace(file, ".jack", ".xml", 1))
-			writeFile(extendedTree, strings.Replace(file, ".jack", "S.xml", 1))
+			tree, vmCode := engine.CompileClass()
+
+			if *xml {
+				writeFile(tokenizer.AsXML(tokens), strings.Replace(file, ".jack", "T.xml", 1))
+				writeFile(tree, strings.Replace(file, ".jack", ".xml", 1))
+			}
+
 			writeFile(vmCode, strings.Replace(file, ".jack", ".vm", 1))
 		}
 	}

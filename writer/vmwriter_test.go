@@ -13,13 +13,13 @@ func TestNewVMWriter(t *testing.T) {
 
 func TestWritePush(t *testing.T) {
 	vmw := NewVMWriter(true)
-	vmw.WritePush(SegmentConstant, 0)
+	vmw.WritePush("constant", 0)
 	assert.Equal(t, "push constant 0\n", vmw.Code)
 }
 
 func TestWritePop(t *testing.T) {
 	vmw := NewVMWriter(true)
-	vmw.WritePop(SegmentTemp, 0)
+	vmw.WritePop("temp", 0)
 	assert.Equal(t, "pop temp 0\n", vmw.Code)
 }
 
