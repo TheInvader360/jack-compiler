@@ -100,11 +100,11 @@ func TestCompileVarDec(t *testing.T) {
 			expectedTree: &Node{Name: "varDec", Value: "", Children: []Node{
 				{Name: "keyword", Value: "var", Children: []Node{}},
 				{Name: "keyword", Value: "int", Children: []Node{}},
-				{Name: "identifier", Value: "a", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "a", Children: []Node{}},
 				{Name: "symbol", Value: ",", Children: []Node{}},
-				{Name: "identifier", Value: "b", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "local", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "b", Children: []Node{}},
 				{Name: "symbol", Value: ",", Children: []Node{}},
-				{Name: "identifier", Value: "c", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "local", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "c", Children: []Node{}},
 				{Name: "symbol", Value: ";", Children: []Node{}},
 			}},
 		},
@@ -131,11 +131,11 @@ func TestCompileExpression(t *testing.T) {
 			},
 			expectedTree: &Node{Name: "expression", Value: "", Children: []Node{
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "a", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+					{Name: "identifier", Value: "a", Children: []Node{}},
 				}},
 				{Name: "symbol", Value: "+", Children: []Node{}},
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "b", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+					{Name: "identifier", Value: "b", Children: []Node{}},
 				}},
 			}},
 		},
@@ -207,7 +207,7 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeStringConstant, Value: "anything..."}, // there should always be more tokens in a valid jack class (no need guard against out of range in code)
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "varName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "varName", Children: []Node{}},
 			}},
 		},
 		{
@@ -218,7 +218,7 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeSymbol, Value: "]"},
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "arr", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "arr", Children: []Node{}},
 				{Name: "symbol", Value: "[", Children: []Node{}},
 				{Name: "expression", Value: "", Children: []Node{
 					{Name: "term", Value: "", Children: []Node{
@@ -235,7 +235,7 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeSymbol, Value: ")"},
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "subroutineName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "subroutineName", Children: []Node{}},
 				{Name: "symbol", Value: "(", Children: []Node{}},
 				{Name: "expressionList", Value: "", Children: []Node{}},
 				{Name: "symbol", Value: ")", Children: []Node{}},
@@ -250,9 +250,9 @@ func TestCompileTerm(t *testing.T) {
 				{TypeOf: tokenizer.TokenTypeSymbol, Value: ")"},
 			},
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
-				{Name: "identifier", Value: "ClassName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "ClassName", Children: []Node{}},
 				{Name: "symbol", Value: ".", Children: []Node{}},
-				{Name: "identifier", Value: "subroutineName", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+				{Name: "identifier", Value: "subroutineName", Children: []Node{}},
 				{Name: "symbol", Value: "(", Children: []Node{}},
 				{Name: "expressionList", Value: "", Children: []Node{}},
 				{Name: "symbol", Value: ")", Children: []Node{}},
@@ -271,7 +271,7 @@ func TestCompileTerm(t *testing.T) {
 					{Name: "term", Value: "", Children: []Node{
 						{Name: "symbol", Value: "-", Children: []Node{}},
 						{Name: "term", Value: "", Children: []Node{
-							{Name: "identifier", Value: "x", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+							{Name: "identifier", Value: "x", Children: []Node{}},
 						}},
 					}},
 				}},
@@ -287,7 +287,7 @@ func TestCompileTerm(t *testing.T) {
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
 				{Name: "symbol", Value: "-", Children: []Node{}},
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "x", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+					{Name: "identifier", Value: "x", Children: []Node{}},
 				}},
 			}},
 		},
@@ -300,7 +300,7 @@ func TestCompileTerm(t *testing.T) {
 			expectedTree: &Node{Name: "term", Value: "", Children: []Node{
 				{Name: "symbol", Value: "~", Children: []Node{}},
 				{Name: "term", Value: "", Children: []Node{
-					{Name: "identifier", Value: "x", Children: []Node{}, IdentifierCategory: "TODO", IdentifierAction: "TODO", IdentifierKind: "TODO", IdentifierIndex: "TODO"},
+					{Name: "identifier", Value: "x", Children: []Node{}},
 				}},
 			}},
 		},

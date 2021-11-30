@@ -5,13 +5,9 @@ import (
 )
 
 type Node struct {
-	Name               string
-	Value              string
-	Children           []Node
-	IdentifierCategory string
-	IdentifierAction   string
-	IdentifierKind     string
-	IdentifierIndex    string
+	Name     string
+	Value    string
+	Children []Node
 }
 
 // AddChild - adds a child node to the node
